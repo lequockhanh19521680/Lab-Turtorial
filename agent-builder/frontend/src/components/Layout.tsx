@@ -11,10 +11,24 @@ import {
   Plus, 
   Settings, 
   User, 
-  Bell,
   Zap,
-  LogOut
+  LogOut,
+  Moon,
+  Sun,
+  Monitor,
+  ChevronDown
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import NotificationCenter from './NotificationCenter'
+import { useTheme } from '@/hooks/use-theme'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -24,6 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  const { setTheme } = useTheme()
   const { sidebarOpen } = useSelector((state: RootState) => state.ui)
   const [currentUser, setCurrentUser] = useState<any>(null)
 
@@ -66,12 +81,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Zap className="h-8 w-8 text-primary-600" />
             <span className="text-xl font-bold text-gray-900">Agent Builder</span>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => dispatch(toggleSidebar())}
-            className="lg:hidden p-1 rounded-md hover:bg-gray-100"
+            className="lg:hidden"
           >
             <X className="h-6 w-6" />
-          </button>
+          </Button>
         </div>
         
         <nav className="mt-6 px-6">
@@ -98,43 +115,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             })}
           </ul>
         </nav>
-        
-        <div className="absolute bottom-6 left-6 right-6">
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-            <div className="flex-shrink-0">
-              <User className="h-8 w-8 text-gray-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email : 'User'}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {currentUser?.email || 'user@example.com'}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex-shrink-0 p-1 rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600"
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col ${sidebarOpen ? 'lg:ml-64' : ''}`}>
+      <div className={`flex-1 flex flex-col ${sidebarOpen ? '' : 'lg:ml-64'}`}>
         {/* Top bar */}
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between h-16 px-6">
             <div className="flex items-center space-x-4">
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => dispatch(toggleSidebar())}
-                className="p-1 rounded-md hover:bg-gray-100 lg:hidden"
+                className="lg:hidden"
               >
                 <Menu className="h-6 w-6" />
-              </button>
+              </Button>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">
                   {location.pathname === '/' && 'Dashboard'}
@@ -145,10 +141,56 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             
             <div className="flex items-center space-x-4">
-              <button className="p-2 rounded-md hover:bg-gray-100 relative">
-                <Bell className="h-5 w-5 text-gray-500" />
-                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-              </button>
+              <NotificationCenter />
+              
+              {/* User dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center space-x-2">
+                    <User className="h-5 w-5" />
+                    <span className="hidden md:inline">
+                      {currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email : 'User'}
+                    </span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'User' : 'User'}
+                      </p>
+                      <p className="text-xs leading-none text-gray-500">
+                        {currentUser?.email || 'user@example.com'}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  {/* Theme selector */}
+                  <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wide">
+                    Theme
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setTheme('light')}>
+                    <Sun className="h-4 w-4 mr-2" />
+                    Light
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme('dark')}>
+                    <Moon className="h-4 w-4 mr-2" />
+                    Dark
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme('system')}>
+                    <Monitor className="h-4 w-4 mr-2" />
+                    System
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
