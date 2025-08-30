@@ -181,5 +181,90 @@ export const authService = {
   // Get stored token
   getToken: (): string | null => {
     return localStorage.getItem('authToken')
+  },
+
+  // Get OAuth URLs for social login
+  getOAuthUrls: () => {
+    const userPoolDomain = import.meta.env.VITE_USER_POOL_DOMAIN || `agent-builder-dev-${import.meta.env.VITE_AWS_ACCOUNT_ID}`
+    const clientId = COGNITO_CONFIG.clientId
+    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/callback`)
+    const region = COGNITO_CONFIG.region
+
+    return {
+      google: `https://${userPoolDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?` +
+        `response_type=code&` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${redirectUri}&` +
+        `scope=email+openid+profile&` +
+        `identity_provider=Google`,
+      
+      cognito: `https://${userPoolDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?` +
+        `response_type=code&` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${redirectUri}&` +
+        `scope=email+openid+profile`
+    }
+  },
+
+  // Handle OAuth callback
+  handleOAuthCallback: async (code: string): Promise<AuthResponse> => {
+    const userPoolDomain = import.meta.env.VITE_USER_POOL_DOMAIN || `agent-builder-dev-${import.meta.env.VITE_AWS_ACCOUNT_ID}`
+    const region = COGNITO_CONFIG.region
+    const redirectUri = `${window.location.origin}/auth/callback`
+
+    try {
+      // Exchange authorization code for tokens
+      const response = await fetch(`https://${userPoolDomain}.auth.${region}.amazoncognito.com/oauth2/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: COGNITO_CONFIG.clientId,
+          code: code,
+          redirect_uri: redirectUri
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to exchange authorization code for tokens')
+      }
+
+      const tokens = await response.json()
+      const { access_token, id_token, refresh_token } = tokens
+
+      // Decode ID token to get user info
+      const idTokenPayload = JSON.parse(atob(id_token.split('.')[1]))
+
+      const authResponse: AuthResponse = {
+        accessToken: access_token,
+        idToken: id_token,
+        refreshToken: refresh_token || '',
+        user: {
+          id: idTokenPayload.sub,
+          email: idTokenPayload.email,
+          firstName: idTokenPayload.given_name,
+          lastName: idTokenPayload.family_name
+        }
+      }
+
+      // Store tokens in localStorage
+      localStorage.setItem('authToken', access_token)
+      localStorage.setItem('idToken', id_token)
+      localStorage.setItem('refreshToken', refresh_token || '')
+      localStorage.setItem('user', JSON.stringify(authResponse.user))
+
+      return authResponse
+    } catch (error: any) {
+      console.error('OAuth callback error:', error)
+      throw new Error(error.message || 'OAuth authentication failed')
+    }
+  },
+
+  // Sign in with Google (redirect to OAuth)
+  signInWithGoogle: (): void => {
+    const urls = authService.getOAuthUrls()
+    window.location.href = urls.google
   }
 }

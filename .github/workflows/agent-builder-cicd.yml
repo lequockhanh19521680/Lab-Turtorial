@@ -1,0 +1,254 @@
+name: Agent Builder CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, staging, develop]
+    paths:
+      - 'agent-builder/**'
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - 'agent-builder/**'
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    name: Test and Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: agent-builder/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd agent-builder
+          npm run install:all
+
+      - name: Lint backend
+        run: |
+          cd agent-builder
+          npm run lint:backend
+
+      - name: Lint frontend
+        run: |
+          cd agent-builder
+          npm run lint:frontend
+
+      - name: Run backend tests
+        run: |
+          cd agent-builder
+          npm run test:backend
+
+      - name: Run frontend tests
+        run: |
+          cd agent-builder
+          npm run test:frontend
+
+      - name: Build backend
+        run: |
+          cd agent-builder
+          npm run build:backend
+
+      - name: Build frontend
+        run: |
+          cd agent-builder
+          npm run build:frontend
+
+      - name: Upload build artifacts
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            agent-builder/backend/dist/
+            agent-builder/frontend/dist/
+          retention-days: 30
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit (backend)
+        run: |
+          cd agent-builder/backend
+          npm audit --audit-level=moderate
+
+      - name: Run npm audit (frontend)
+        run: |
+          cd agent-builder/frontend
+          npm audit --audit-level=moderate
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: javascript,typescript
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/staging'
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: agent-builder/package-lock.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: agent-builder/
+
+      - name: Deploy backend to staging
+        run: |
+          cd agent-builder/backend
+          sam deploy \
+            --stack-name agent-builder-staging \
+            --parameter-overrides Environment=staging \
+            --capabilities CAPABILITY_IAM \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --resolve-s3
+
+      - name: Deploy frontend to staging
+        run: |
+          cd agent-builder
+          # Get CloudFront distribution ID from stack outputs
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name agent-builder-staging \
+            --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" \
+            --output text)
+          
+          # Sync frontend files to S3
+          aws s3 sync frontend/dist/ s3://agent-builder-frontend-staging-${{ secrets.AWS_ACCOUNT_ID }}/ \
+            --delete \
+            --cache-control "public, max-age=31536000"
+          
+          # Invalidate CloudFront cache
+          if [ ! -z "$DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id $DISTRIBUTION_ID \
+              --paths "/*"
+          fi
+
+      - name: Run smoke tests
+        run: |
+          cd agent-builder
+          # Add smoke tests here
+          echo "Running smoke tests against staging environment"
+          # curl -f $STAGING_URL/health || exit 1
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: agent-builder/package-lock.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: agent-builder/
+
+      - name: Deploy backend to production
+        run: |
+          cd agent-builder/backend
+          sam deploy \
+            --stack-name agent-builder-prod \
+            --parameter-overrides Environment=prod \
+            --capabilities CAPABILITY_IAM \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --resolve-s3
+
+      - name: Deploy frontend to production
+        run: |
+          cd agent-builder
+          # Get CloudFront distribution ID from stack outputs
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name agent-builder-prod \
+            --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" \
+            --output text)
+          
+          # Sync frontend files to S3
+          aws s3 sync frontend/dist/ s3://agent-builder-frontend-prod-${{ secrets.AWS_ACCOUNT_ID }}/ \
+            --delete \
+            --cache-control "public, max-age=31536000"
+          
+          # Invalidate CloudFront cache
+          if [ ! -z "$DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id $DISTRIBUTION_ID \
+              --paths "/*"
+          fi
+
+      - name: Run health checks
+        run: |
+          cd agent-builder
+          echo "Running health checks against production environment"
+          # Add production health checks here
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Production deployment successful!"
+          # Add Slack/email notifications here
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Production deployment failed!"
+          # Add failure notifications here
