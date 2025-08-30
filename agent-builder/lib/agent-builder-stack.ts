@@ -306,7 +306,7 @@ export class AgentBuilderStack extends cdk.Stack {
     const projectsFunction = new lambda.Function(this, 'ProjectsFunction', {
       runtime,
       handler: 'projects.handler',
-      code: lambda.Code.fromAsset('backend/dist/handlers'),
+      code: lambda.Code.fromAsset('dist/src/handlers'), // Updated path to new layered structure
       environment: lambdaEnvironment,
       timeout,
       memorySize,
@@ -320,7 +320,7 @@ export class AgentBuilderStack extends cdk.Stack {
     const agentWorkerFunction = new lambda.Function(this, 'AgentWorkerFunction', {
       runtime,
       handler: 'agentWorker.handler',
-      code: lambda.Code.fromAsset('backend/dist/handlers'),
+      code: lambda.Code.fromAsset('backend/dist/handlers'), // Keep old path for now
       environment: lambdaEnvironment,
       timeout: cdk.Duration.minutes(15),
       memorySize,
@@ -341,7 +341,7 @@ export class AgentBuilderStack extends cdk.Stack {
     const tasksFunction = new lambda.Function(this, 'TasksFunction', {
       runtime,
       handler: 'tasks.handler',
-      code: lambda.Code.fromAsset('backend/dist/handlers'),
+      code: lambda.Code.fromAsset('dist/src/handlers'),
       environment: lambdaEnvironment,
       timeout,
       memorySize,
@@ -354,7 +354,7 @@ export class AgentBuilderStack extends cdk.Stack {
     const artifactsFunction = new lambda.Function(this, 'ArtifactsFunction', {
       runtime,
       handler: 'artifacts.handler',
-      code: lambda.Code.fromAsset('backend/dist/handlers'),
+      code: lambda.Code.fromAsset('dist/src/handlers'),
       environment: lambdaEnvironment,
       timeout,
       memorySize,

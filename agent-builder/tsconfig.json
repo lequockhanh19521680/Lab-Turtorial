@@ -22,6 +22,6 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "include": ["lib/**/*", "backend/src/**/*"],
+  "include": ["lib/**/*", "backend/src/**/*", "src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "frontend/**/*"]
 }
