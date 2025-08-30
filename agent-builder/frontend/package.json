@@ -12,6 +12,10 @@
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.879.0",
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-react": "^7.27.1",
+    "@babel/preset-typescript": "^7.27.1",
     "@fontsource/figtree": "^5.2.8",
     "@fontsource/inter": "^5.2.6",
     "@headlessui/react": "^2.2.7",
