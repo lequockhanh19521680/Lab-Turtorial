@@ -1,6 +1,6 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: 'Agent Builder - Autonomous Software Factory Backend'
+Description: "Agent Builder - Autonomous Software Factory Backend"
 
 Globals:
   Function:
@@ -11,852 +11,170 @@ Globals:
       Variables:
         NODE_ENV: production
         PROJECTS_TABLE: !Ref ProjectsTable
-        TASKS_TABLE: !Ref TasksTable
-        ARTIFACTS_TABLE: !Ref ArtifactsTable
-        ARTIFACTS_BUCKET: !Ref ArtifactsBucket
-        AGENT_TASK_QUEUE_URL: !Ref AgentTaskQueue
-        PROJECT_NOTIFICATION_TOPIC_ARN: !Ref ProjectNotificationTopic
-        WEBSOCKET_API_ENDPOINT: !Sub '${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+        USERS_TABLE: !Ref UsersTable
         CONNECTIONS_TABLE: !Ref ConnectionsTable
-        # Secrets are now fetched from SSM at runtime
+        MESSAGES_TABLE: !Ref MessagesTable
+        AGENTS_TABLE: !Ref AgentsTable
+        S3_BUCKET: !Ref FrontendBucket
+        WEBSOCKET_API: !Ref WebSocketApi
 
 Parameters:
   Environment:
     Type: String
-    Default: dev
     AllowedValues: [dev, staging, prod]
+    Default: dev
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
 
 Resources:
-  # SQS Queue for Agent Task Processing
-  AgentTaskQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Sub 'agent-builder-task-queue-${Environment}'
-      VisibilityTimeoutSeconds: 900  # 15 minutes for long-running agent tasks
-      MessageRetentionPeriod: 1209600  # 14 days
-      RedrivePolicy:
-        deadLetterTargetArn: !GetAtt AgentTaskDLQ.Arn
-        maxReceiveCount: 3
-
-  # Dead Letter Queue for failed tasks
-  AgentTaskDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Sub 'agent-builder-task-dlq-${Environment}'
-      MessageRetentionPeriod: 1209600  # 14 days
-
-  # SNS Topic for real-time notifications
-  ProjectNotificationTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: !Sub 'agent-builder-notifications-${Environment}'
-      DisplayName: 'Agent Builder Project Notifications'
-  # API Gateway
-  AgentBuilderApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: !Ref Environment
-      Cors:
-        AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: "'*'"
-      Auth:
-        DefaultAuthorizer: CognitoAuthorizer
-        Authorizers:
-          CognitoAuthorizer:
-            UserPoolArn: !GetAtt UserPool.Arn
-
-  # WebSocket API for real-time updates
-  WebSocketApi:
-    Type: AWS::ApiGatewayV2::Api
-    Properties:
-      Name: !Sub 'agent-builder-websocket-${Environment}'
-      ProtocolType: WEBSOCKET
-      RouteSelectionExpression: $request.body.action
-
-  # WebSocket Routes
-  ConnectRoute:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref WebSocketApi
-      RouteKey: $connect
-      AuthorizationType: NONE
-      OperationName: ConnectRoute
-      Target: !Join
-        - '/'
-        - - 'integrations'
-          - !Ref ConnectInteg
-
-  DisconnectRoute:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref WebSocketApi
-      RouteKey: $disconnect
-      AuthorizationType: NONE
-      OperationName: DisconnectRoute
-      Target: !Join
-        - '/'
-        - - 'integrations'
-          - !Ref DisconnectInteg
-
-  DefaultRoute:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref WebSocketApi
-      RouteKey: $default
-      AuthorizationType: NONE
-      OperationName: DefaultRoute
-      Target: !Join
-        - '/'
-        - - 'integrations'
-          - !Ref DefaultInteg
-
-  # WebSocket Integrations
-  ConnectInteg:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-      ApiId: !Ref WebSocketApi
-      Description: Connect Integration
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations'
-
-  DisconnectInteg:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-      ApiId: !Ref WebSocketApi
-      Description: Disconnect Integration
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations'
-
-  DefaultInteg:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-      ApiId: !Ref WebSocketApi
-      Description: Default Integration
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnMessageFunction.Arn}/invocations'
-
-  # WebSocket Deployment
-  Deployment:
-    Type: AWS::ApiGatewayV2::Deployment
-    DependsOn:
-      - ConnectRoute
-      - DisconnectRoute
-      - DefaultRoute
-    Properties:
-      ApiId: !Ref WebSocketApi
-
-  Stage:
-    Type: AWS::ApiGatewayV2::Stage
-    Properties:
-      StageName: !Ref Environment
-      Description: !Sub '${Environment} Stage'
-      DeploymentId: !Ref Deployment
-      ApiId: !Ref WebSocketApi
-
-  # Lambda Functions
-  ProjectsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: projects.handler
-      Events:
-        GetProjects:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects
-            Method: get
-        CreateProject:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects
-            Method: post
-        GetProject:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects/{id}
-            Method: get
-        UpdateProject:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects/{id}
-            Method: patch
-        DeleteProject:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects/{id}
-            Method: delete
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ArtifactsTable
-
-  OrchestratorFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: orchestrator.handler
-      Events:
-        StartOrchestration:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /agents/orchestrator
-            Method: post
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt AgentTaskQueue.QueueName
-
-  # New Agent Worker Function to process SQS messages
-  AgentWorkerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: agentWorker.handler
-      Timeout: 900  # 15 minutes for agent processing
-      Events:
-        SQSEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt AgentTaskQueue.Arn
-            BatchSize: 1  # Process one task at a time
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ArtifactsTable
-        - S3CrudPolicy:
-            BucketName: !Ref ArtifactsBucket
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt AgentTaskQueue.QueueName
-        - LambdaInvokePolicy:
-            FunctionName: !Ref ProductManagerFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref BackendEngineerFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref FrontendEngineerFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref DevOpsEngineerFunction
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-                - ssm:GetParameters
-              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
-
-  ResumeExecutionFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: resumeExecutionHandler.handler
-      Events:
-        ResumeExecution:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects/{id}/resume
-            Method: post
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt AgentTaskQueue.QueueName
-        - Statement:
-            - Effect: Allow
-              Action:
-                - sns:Publish
-              Resource: !Ref ProjectNotificationTopic
-
-  TasksFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: tasks.handler
-      Events:
-        GetProjectTasks:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects/{id}/tasks
-            Method: get
-        GetProjectStatus:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects/{id}/status
-            Method: get
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-
-  ArtifactsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: artifacts.handler
-      Events:
-        GetProjectArtifacts:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /projects/{id}/artifacts
-            Method: get
-        CreateArtifact:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AgentBuilderApi
-            Path: /artifacts
-            Method: post
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ArtifactsTable
-        - S3CrudPolicy:
-            BucketName: !Ref ArtifactsBucket
-
-  # DynamoDB Tables
   ProjectsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub 'agent-builder-projects-${Environment}'
-      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: projectId
-          AttributeType: S
-        - AttributeName: userId
+        - AttributeName: id
           AttributeType: S
       KeySchema:
-        - AttributeName: projectId
+        - AttributeName: id
           KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: UserIndex
-          KeySchema:
-            - AttributeName: userId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Sub projects-${Environment}
 
-  TasksTable:
+  UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub 'agent-builder-tasks-${Environment}'
-      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: projectId
-          AttributeType: S
-        - AttributeName: taskId
+        - AttributeName: id
           AttributeType: S
       KeySchema:
-        - AttributeName: projectId
+        - AttributeName: id
           KeyType: HASH
-        - AttributeName: taskId
-          KeyType: RANGE
-
-  ArtifactsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'agent-builder-artifacts-${Environment}'
       BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: projectId
-          AttributeType: S
-        - AttributeName: artifactId
-          AttributeType: S
-      KeySchema:
-        - AttributeName: projectId
-          KeyType: HASH
-        - AttributeName: artifactId
-          KeyType: RANGE
+      TableName: !Sub users-${Environment}
 
-  # WebSocket Connections Table
   ConnectionsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub 'agent-builder-connections-${Environment}'
-      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: connectionId
-          AttributeType: S
-        - AttributeName: projectId
           AttributeType: S
       KeySchema:
         - AttributeName: connectionId
           KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: ProjectIndex
-          KeySchema:
-            - AttributeName: projectId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-      TimeToLiveSpecification:
-        AttributeName: ttl
-        Enabled: true
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Sub connections-${Environment}
 
-  # S3 Bucket for artifacts
-  ArtifactsBucket:
-    Type: AWS::S3::Bucket
+  MessagesTable:
+    Type: AWS::DynamoDB::Table
     Properties:
-      BucketName: !Sub 'agent-builder-artifacts-${Environment}-${AWS::AccountId}'
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders: ['*']
-            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
-            AllowedOrigins: ['*']
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Sub messages-${Environment}
 
-  # Cognito User Pool
-  UserPool:
-    Type: AWS::Cognito::UserPool
+  AgentsTable:
+    Type: AWS::DynamoDB::Table
     Properties:
-      UserPoolName: !Sub 'agent-builder-users-${Environment}'
-      UsernameAttributes:
-        - email
-      AutoVerifiedAttributes:
-        - email
-      Policies:
-        PasswordPolicy:
-          MinimumLength: 8
-          RequireUppercase: true
-          RequireLowercase: true
-          RequireNumbers: true
-          RequireSymbols: false
-      Schema:
-        - Name: email
-          AttributeDataType: String
-          Required: true
-          Mutable: true
-        - Name: given_name
-          AttributeDataType: String
-          Required: false
-          Mutable: true
-        - Name: family_name
-          AttributeDataType: String
-          Required: false
-          Mutable: true
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Sub agents-${Environment}
 
-  UserPoolClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      UserPoolId: !Ref UserPool
-      ClientName: !Sub 'agent-builder-client-${Environment}'
-      GenerateSecret: false
-      ExplicitAuthFlows:
-        - ADMIN_NO_SRP_AUTH
-        - USER_PASSWORD_AUTH
-        - ALLOW_USER_SRP_AUTH
-        - ALLOW_REFRESH_TOKEN_AUTH
-      SupportedIdentityProviders:
-        - COGNITO
-        - Google
-      CallbackURLs:
-        - !Sub 'https://${Environment === "prod" ? "app" : Environment}.agent-builder.app/auth/callback'
-        - 'http://localhost:3000/auth/callback'
-      LogoutURLs:
-        - !Sub 'https://${Environment === "prod" ? "app" : Environment}.agent-builder.app/auth/logout'
-        - 'http://localhost:3000/auth/logout'
-      AllowedOAuthFlows:
-        - code
-        - implicit
-      AllowedOAuthScopes:
-        - email
-        - openid
-        - profile
-      AllowedOAuthFlowsUserPoolClient: true
-
-  # Google Identity Provider (requires manual setup of Google OAuth credentials)
-  GoogleIdentityProvider:
-    Type: AWS::Cognito::UserPoolIdentityProvider
-    Properties:
-      UserPoolId: !Ref UserPool
-      ProviderName: Google
-      ProviderType: Google
-      ProviderDetails:
-        client_id: !Sub '{{resolve:ssm:/agent-builder/${Environment}/google-oauth-client-id:1}}'
-        client_secret: !Sub '{{resolve:ssm:/agent-builder/${Environment}/google-oauth-client-secret:1}}'
-        authorize_scopes: email openid profile
-      AttributeMapping:
-        email: email
-        given_name: given_name
-        family_name: family_name
-        username: sub
-
-  # User Pool Domain for OAuth flows
-  UserPoolDomain:
-    Type: AWS::Cognito::UserPoolDomain
-    Properties:
-      UserPoolId: !Ref UserPool
-      Domain: !Sub 'agent-builder-${Environment}-${AWS::AccountId}'
-
-  # Step Functions for Agent Workflow
-  AgentWorkflowStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      StateMachineName: !Sub 'agent-builder-workflow-${Environment}'
-      RoleArn: !GetAtt StepFunctionsRole.Arn
-      DefinitionString: !Sub |
-        {
-          "Comment": "Agent Builder Workflow",
-          "StartAt": "ProductManagerAgent",
-          "States": {
-            "ProductManagerAgent": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "${ProductManagerFunction}",
-                "Payload.$": "$"
-              },
-              "Next": "BackendEngineerAgent"
-            },
-            "BackendEngineerAgent": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "${BackendEngineerFunction}",
-                "Payload.$": "$"
-              },
-              "Next": "FrontendEngineerAgent"
-            },
-            "FrontendEngineerAgent": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "${FrontendEngineerFunction}",
-                "Payload.$": "$"
-              },
-              "Next": "DevOpsEngineerAgent"
-            },
-            "DevOpsEngineerAgent": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "${DevOpsEngineerFunction}",
-                "Payload.$": "$"
-              },
-              "End": true
-            }
-          }
-        }
-
-  # AI Agent Functions
-  ProductManagerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/agents/
-      Handler: productManager.handler
-      Timeout: 600
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ArtifactsTable
-        - S3CrudPolicy:
-            BucketName: !Ref ArtifactsBucket
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt AgentTaskQueue.QueueName
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-                - ssm:GetParameters
-              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
-
-  BackendEngineerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/agents/
-      Handler: backendEngineer.handler
-      Timeout: 600
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ArtifactsTable
-        - S3CrudPolicy:
-            BucketName: !Ref ArtifactsBucket
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt AgentTaskQueue.QueueName
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-                - ssm:GetParameters
-              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
-
-  FrontendEngineerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/agents/
-      Handler: frontendEngineer.handler
-      Timeout: 600
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ArtifactsTable
-        - S3CrudPolicy:
-            BucketName: !Ref ArtifactsBucket
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt AgentTaskQueue.QueueName
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-                - ssm:GetParameters
-              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
-
-  DevOpsEngineerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/agents/
-      Handler: devopsEngineer.handler
-      Timeout: 600
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ProjectsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ArtifactsTable
-        - S3CrudPolicy:
-            BucketName: !Ref ArtifactsBucket
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt AgentTaskQueue.QueueName
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-                - ssm:GetParameters
-              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
-
-  # WebSocket Lambda Functions
-  OnConnectFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: websocket.onConnect
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ConnectionsTable
-
-  OnDisconnectFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: websocket.onDisconnect
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ConnectionsTable
-
-  OnMessageFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: websocket.onMessage
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ConnectionsTable
-
-  # SNS Notification Handler
-  NotificationHandlerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: dist/handlers/
-      Handler: notificationHandler.handler
-      Events:
-        SNSEvent:
-          Type: SNS
-          Properties:
-            Topic: !Ref ProjectNotificationTopic
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ConnectionsTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - execute-api:ManageConnections
-              Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*'
-
-  # Lambda Permissions for WebSocket API
-  OnConnectPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - WebSocketApi
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref OnConnectFunction
-      Principal: apigateway.amazonaws.com
-
-  OnDisconnectPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - WebSocketApi
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref OnDisconnectFunction
-      Principal: apigateway.amazonaws.com
-
-  OnMessagePermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - WebSocketApi
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref OnMessageFunction
-      Principal: apigateway.amazonaws.com
-
-  # IAM Role for Step Functions
-  StepFunctionsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: states.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: LambdaInvokePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource:
-                  - !GetAtt ProductManagerFunction.Arn
-                  - !GetAtt BackendEngineerFunction.Arn
-                  - !GetAtt FrontendEngineerFunction.Arn
-                  - !GetAtt DevOpsEngineerFunction.Arn
-
-  # Frontend Hosting Resources
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub 'agent-builder-frontend-${Environment}-${AWS::AccountId}'
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: index.html
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders: ['*']
-            AllowedMethods: [GET, HEAD]
-            AllowedOrigins: ['*']
+      BucketName: !Sub agent-builder-${Environment}-${AWS::AccountId}
 
   FrontendBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref FrontendBucket
       PolicyDocument:
+        Version: "2012-10-17"
         Statement:
-          - Sid: PublicReadGetObject
-            Effect: Allow
-            Principal: '*'
+          - Effect: Allow
+            Principal: "*"
             Action: s3:GetObject
-            Resource: !Sub '${FrontendBucket}/*'
+            Resource: !Join ["", [!GetAtt FrontendBucket.Arn, "/*"]]
 
-  CloudFrontDistribution:
-    Type: AWS::CloudFront::Distribution
+  UserPool:
+    Type: AWS::Cognito::UserPool
     Properties:
-      DistributionConfig:
-        Origins:
-          - Id: S3Origin
-            DomainName: !GetAtt FrontendBucket.RegionalDomainName
-            CustomOriginConfig:
-              HTTPPort: 80
-              HTTPSPort: 443
-              OriginProtocolPolicy: http-only
-        Enabled: true
-        DefaultRootObject: index.html
-        Comment: !Sub 'Agent Builder Frontend - ${Environment}'
-        DefaultCacheBehavior:
-          TargetOriginId: S3Origin
-          ViewerProtocolPolicy: redirect-to-https
-          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # CachingDisabled
-          ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03  # SecurityHeadersPolicy
-        PriceClass: PriceClass_100
-        HttpVersion: http2
-        CustomErrorResponses:
-          - ErrorCode: 404
-            ResponseCode: 200
-            ResponsePagePath: /index.html
-          - ErrorCode: 403
-            ResponseCode: 200
-            ResponsePagePath: /index.html
+      UserPoolName: !Sub agent-builder-${Environment}-userpool
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub agent-builder-${Environment}-client
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      CallbackURLs:
+        - !If
+          - IsProd
+          - "https://app.agent-builder.app/auth/callback"
+          - !Sub "https://${Environment}.agent-builder.app/auth/callback"
+        - "http://localhost:3000/auth/callback"
+      LogoutURLs:
+        - !If
+          - IsProd
+          - "https://app.agent-builder.app/auth/logout"
+          - !Sub "https://${Environment}.agent-builder.app/auth/logout"
+        - "http://localhost:3000/auth/logout"
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email, profile]
+
+  AgentBuilderApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub agent-builder-${Environment}-api
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub agent-builder-${Environment}-ws
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketApi
+      StageName: !Ref Environment
+      AutoDeploy: true
 
 Outputs:
   ApiGatewayEndpoint:
-    Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${AgentBuilderApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
-    Export:
-      Name: !Sub "${AWS::StackName}-ApiEndpoint"
-  
-  UserPoolId:
-    Description: "Cognito User Pool ID"
-    Value: !Ref UserPool
-    Export:
-      Name: !Sub "${AWS::StackName}-UserPoolId"
-  
-  UserPoolClientId:
-    Description: "Cognito User Pool Client ID"
-    Value: !Ref UserPoolClient
-    Export:
-      Name: !Sub "${AWS::StackName}-UserPoolClientId"
+    Description: "REST API endpoint"
+    Value: !Sub
+      - "https://${ApiId}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+      - { ApiId: !Ref AgentBuilderApi }
 
   WebSocketApiEndpoint:
-    Description: "WebSocket API endpoint URL"
-    Value: !Sub "wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
-    Export:
-      Name: !Sub "${AWS::StackName}-WebSocketEndpoint"
-
-  UserPoolDomain:
-    Description: "Cognito User Pool Domain"
-    Value: !Ref UserPoolDomain
-    Export:
-      Name: !Sub "${AWS::StackName}-UserPoolDomain"
+    Description: "WebSocket API endpoint"
+    Value: !Sub
+      - "wss://${ApiId}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+      - { ApiId: !Ref WebSocketApi }
 
   FrontendBucketName:
-    Description: "Frontend S3 bucket name"
+    Description: "Frontend S3 Bucket"
     Value: !Ref FrontendBucket
-    Export:
-      Name: !Sub "${AWS::StackName}-FrontendBucket"
 
-  CloudFrontDistributionId:
-    Description: "CloudFront distribution ID"
-    Value: !Ref CloudFrontDistribution
-    Export:
-      Name: !Sub "${AWS::StackName}-CloudFrontDistributionId"
+  CognitoUserPoolId:
+    Value: !Ref UserPool
 
-  CloudFrontUrl:
-    Description: "CloudFront distribution URL"
-    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
-    Export:
-      Name: !Sub "${AWS::StackName}-CloudFrontUrl"
+  CognitoUserPoolClientId:
+    Value: !Ref UserPoolClient
