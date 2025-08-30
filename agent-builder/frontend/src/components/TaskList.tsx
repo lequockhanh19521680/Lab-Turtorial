@@ -15,6 +15,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
         return <XCircle className="h-4 w-4 text-red-500" />
       case 'IN_PROGRESS':
         return <Clock className="h-4 w-4 text-blue-500 animate-pulse" />
+      case 'PENDING_APPROVAL':
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />
       default:
         return <AlertCircle className="h-4 w-4 text-gray-400" />
     }
@@ -28,6 +30,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
         return 'bg-red-50 border-red-200'
       case 'IN_PROGRESS':
         return 'bg-blue-50 border-blue-200'
+      case 'PENDING_APPROVAL':
+        return 'bg-yellow-50 border-yellow-200'
       default:
         return 'bg-gray-50 border-gray-200'
     }
@@ -41,6 +45,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
         return 'bg-red-500'
       case 'IN_PROGRESS':
         return 'bg-blue-500'
+      case 'PENDING_APPROVAL':
+        return 'bg-yellow-500'
       default:
         return 'bg-gray-300'
     }

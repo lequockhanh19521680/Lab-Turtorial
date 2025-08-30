@@ -1,15 +1,12 @@
 import { SQSEvent, SQSRecord, Context } from 'aws-lambda'
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns'
 import { DatabaseService } from '../utils/database'
 
 const lambdaClient = new LambdaClient({})
-const sqsClient = new SQSClient({})
 const snsClient = new SNSClient({})
 const db = new DatabaseService()
 
-const AGENT_TASK_QUEUE_URL = process.env.AGENT_TASK_QUEUE_URL!
 const PROJECT_NOTIFICATION_TOPIC_ARN = process.env.PROJECT_NOTIFICATION_TOPIC_ARN!
 const FUNCTION_PREFIX = process.env.AWS_LAMBDA_FUNCTION_NAME?.split('-')[0] || 'agent-builder'
 
@@ -78,39 +75,25 @@ const processAgentTask = async (record: SQSRecord): Promise<void> => {
         const result = JSON.parse(new TextDecoder().decode(response.Payload))
         
         if (result.success) {
-          // Mark task as completed
+          // Mark task as pending approval instead of completed
           await db.updateTask(projectId, agentTask.taskId, {
-            status: 'DONE',
+            status: 'PENDING_APPROVAL',
             completedAt: new Date().toISOString(),
             progress: 100,
           })
 
-          // Send notification about task completion
+          // Send notification about task completion awaiting approval
           await sendNotification(projectId, 'task_update', {
             taskId: agentTask.taskId,
             agentName,
-            status: 'DONE',
-            progress: 100
+            status: 'PENDING_APPROVAL',
+            progress: 100,
+            artifacts: result.artifacts || []
           })
 
-          console.log(`Agent ${agentName} completed successfully for project ${projectId}`)
+          console.log(`Agent ${agentName} completed and awaiting approval for project ${projectId}`)
 
-          // Queue the next agent in the sequence
-          const nextAgent = getNextAgent(agentName)
-          if (nextAgent) {
-            await queueNextAgent(projectId, nextAgent)
-          } else {
-            // All agents completed, update project status
-            await db.updateProject(projectId, { status: 'COMPLETED' })
-            
-            // Send notification about project completion
-            await sendNotification(projectId, 'project_update', {
-              status: 'COMPLETED',
-              message: 'All agents completed successfully'
-            })
-            
-            console.log(`All agents completed for project ${projectId}`)
-          }
+          // Note: No longer automatically queuing next agent - will be done via resume endpoint
         } else {
           throw new Error(result.errorMessage || 'Agent execution failed')
         }
@@ -166,44 +149,6 @@ const getAgentFunctionName = (agentName: string): string => {
   }
 
   return functionName
-}
-
-const getNextAgent = (currentAgent: string): string | null => {
-  const agentOrder = [
-    'ProductManagerAgent',
-    'BackendEngineerAgent', 
-    'FrontendEngineerAgent',
-    'DevOpsEngineerAgent',
-  ]
-
-  const currentIndex = agentOrder.indexOf(currentAgent)
-  if (currentIndex >= 0 && currentIndex < agentOrder.length - 1) {
-    return agentOrder[currentIndex + 1]
-  }
-
-  return null
-}
-
-const queueNextAgent = async (projectId: string, agentName: string): Promise<void> => {
-  const message: AgentTaskMessage = {
-    projectId,
-    agentName
-  }
-
-  try {
-    const sendCommand = new SendMessageCommand({
-      QueueUrl: AGENT_TASK_QUEUE_URL,
-      MessageBody: JSON.stringify(message),
-      MessageGroupId: projectId, // For FIFO queue (if needed)
-      MessageDeduplicationId: `${projectId}-${agentName}-${Date.now()}` // For FIFO queue (if needed)
-    })
-
-    await sqsClient.send(sendCommand)
-    console.log(`Queued next agent: ${agentName} for project ${projectId}`)
-  } catch (error) {
-    console.error(`Failed to queue next agent ${agentName}:`, error)
-    throw error
-  }
 }
 
 const sendNotification = async (

@@ -113,11 +113,12 @@ const MOCK_TASKS: Task[] = [
     projectId: 'proj-2',
     taskId: 'task-2-3',
     assignedAgent: 'FrontendEngineerAgent',
-    status: 'IN_PROGRESS',
+    status: 'PENDING_APPROVAL',
     dependencies: ['task-2-2'],
     description: 'Create React components and user interface',
-    progress: 65,
-    startedAt: '2024-01-19T12:00:00.000Z'
+    progress: 100,
+    startedAt: '2024-01-19T12:00:00.000Z',
+    completedAt: '2024-01-19T16:45:00.000Z'
   },
   {
     projectId: 'proj-2',

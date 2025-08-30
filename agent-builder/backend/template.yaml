@@ -258,6 +258,31 @@ Resources:
                 - ssm:GetParameters
               Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
 
+  ResumeExecutionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: resumeExecutionHandler.handler
+      Events:
+        ResumeExecution:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}/resume
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AgentTaskQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref ProjectNotificationTopic
+
   TasksFunction:
     Type: AWS::Serverless::Function
     Properties:
