@@ -126,4 +126,23 @@ export const projectsApi = {
     const response = await api.get(`/projects/${projectId}/status`)
     return response.data
   },
+
+  // Resume execution after approval
+  resumeExecution: async (projectId: string, data?: { taskId?: string, feedback?: string }): Promise<{
+    message: string
+    currentTask?: any
+    nextAgent?: string
+    status: string
+  }> => {
+    if (USE_MOCK_API) {
+      // For mock API, simulate approval
+      return { 
+        message: 'Task approved and next agent queued successfully',
+        status: 'IN_PROGRESS' 
+      }
+    }
+    
+    const response = await api.post(`/projects/${projectId}/resume`, data || {})
+    return response.data
+  },
 }

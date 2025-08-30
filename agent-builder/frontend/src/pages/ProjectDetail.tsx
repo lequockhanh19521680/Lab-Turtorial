@@ -18,9 +18,153 @@ import {
   Download,
   RefreshCw,
   Wifi,
-  WifiOff
+  WifiOff,
+  PlayCircle,
+  FileText
 } from 'lucide-react'
 import { format } from 'date-fns'
+import type { Task, Artifact } from '../store/slices/projectsSlice'
+
+// Pending Approval Section Component
+interface PendingApprovalSectionProps {
+  projectId: string
+  tasks: Task[]
+  artifacts: Artifact[]
+  onApprove: () => void
+}
+
+const PendingApprovalSection: React.FC<PendingApprovalSectionProps> = ({ 
+  projectId, 
+  tasks, 
+  artifacts, 
+  onApprove 
+}) => {
+  const [isApproving, setIsApproving] = useState(false)
+  const [feedback, setFeedback] = useState('')
+  
+  const pendingTasks = tasks.filter(task => task.status === 'PENDING_APPROVAL')
+  
+  if (pendingTasks.length === 0) return null
+  
+  const currentPendingTask = pendingTasks[0] // Assuming one pending task at a time
+  
+  // Get artifacts related to this task
+  const taskArtifacts = artifacts.filter(artifact => 
+    artifact.artifactId === currentPendingTask.outputArtifactId
+  )
+  
+  const handleApprove = async () => {
+    setIsApproving(true)
+    try {
+      await projectsApi.resumeExecution(projectId, {
+        taskId: currentPendingTask.taskId,
+        feedback: feedback.trim() || undefined
+      })
+      onApprove()
+      setFeedback('')
+    } catch (error) {
+      console.error('Error approving task:', error)
+      // Could add toast notification here
+    } finally {
+      setIsApproving(false)
+    }
+  }
+  
+  return (
+    <div className="card border-2 border-blue-200 bg-blue-50">
+      <div className="flex items-center space-x-3 mb-4">
+        <div className="flex-shrink-0">
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <Clock className="h-4 w-4 text-white" />
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-medium text-gray-900">Task Awaiting Approval</h3>
+          <p className="text-sm text-gray-600">
+            {currentPendingTask.assignedAgent} has completed their work and is waiting for your approval to continue.
+          </p>
+        </div>
+      </div>
+      
+      {/* Task Details */}
+      <div className="bg-white rounded-lg p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-medium text-gray-900">{currentPendingTask.assignedAgent}</h4>
+          <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+            Pending Approval
+          </span>
+        </div>
+        
+        {currentPendingTask.description && (
+          <p className="text-sm text-gray-600 mb-3">{currentPendingTask.description}</p>
+        )}
+        
+        {/* Show artifacts if available */}
+        {taskArtifacts.length > 0 && (
+          <div className="mb-4">
+            <h5 className="text-sm font-medium text-gray-700 mb-2">Generated Artifacts:</h5>
+            <div className="space-y-2">
+              {taskArtifacts.map((artifact) => (
+                <div key={artifact.artifactId} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                  <FileText className="h-4 w-4 text-gray-400" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{artifact.title || artifact.artifactType}</p>
+                    {artifact.description && (
+                      <p className="text-xs text-gray-500">{artifact.description}</p>
+                    )}
+                  </div>
+                  <a 
+                    href={artifact.location} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-700 text-sm"
+                  >
+                    View
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Optional Feedback */}
+      <div className="mb-4">
+        <label htmlFor="feedback" className="block text-sm font-medium text-gray-700 mb-2">
+          Feedback (Optional)
+        </label>
+        <textarea
+          id="feedback"
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+          placeholder="Provide any feedback or comments for the agent..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          rows={3}
+        />
+      </div>
+      
+      {/* Action Buttons */}
+      <div className="flex space-x-3">
+        <button
+          onClick={handleApprove}
+          disabled={isApproving}
+          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <PlayCircle className="h-4 w-4" />
+          <span>{isApproving ? 'Approving...' : 'Approve & Continue'}</span>
+        </button>
+        
+        {/* Future: Add "Request Changes" button */}
+        <button
+          disabled={isApproving}
+          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Request Changes (Coming Soon)
+        </button>
+      </div>
+    </div>
+  )
+}
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -230,6 +374,21 @@ const ProjectDetail: React.FC = () => {
             estimatedCompletion={status.estimatedCompletion}
           />
         </div>
+      )}
+
+      {/* Pending Approval Section */}
+      {tasks?.some(task => task.status === 'PENDING_APPROVAL') && (
+        <PendingApprovalSection 
+          projectId={id!}
+          tasks={tasks}
+          artifacts={artifacts || []}
+          onApprove={() => {
+            // Refresh data after approval
+            queryClient.invalidateQueries({ queryKey: ['project', id] })
+            queryClient.invalidateQueries({ queryKey: ['project-tasks', id] })
+            queryClient.invalidateQueries({ queryKey: ['project-status', id] })
+          }}
+        />
       )}
 
       {/* Project Info */}
