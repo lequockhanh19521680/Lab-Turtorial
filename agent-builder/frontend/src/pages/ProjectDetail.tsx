@@ -1,11 +1,10 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useDispatch } from 'react-redux'
-// import { useSelector } from 'react-redux'
-// import { RootState } from '../store'
 import { setCurrentProject } from '../store/slices/projectsSlice'
 import { projectsApi } from '../services/projects'
+import webSocketService, { WebSocketMessage } from '../services/websocket'
 import TaskList from '../components/TaskList'
 import ArtifactList from '../components/ArtifactList'
 import ProgressIndicator from '../components/ProgressIndicator'
@@ -17,22 +16,26 @@ import {
   AlertCircle,
   ExternalLink,
   Download,
-  RefreshCw
+  RefreshCw,
+  Wifi,
+  WifiOff
 } from 'lucide-react'
 import { format } from 'date-fns'
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const dispatch = useDispatch()
-  // const { currentProject } = useSelector((state: RootState) => state.projects)
+  const queryClient = useQueryClient()
+  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false)
 
+  // Get project data with reduced polling since WebSocket will provide updates
   const { data: project, isLoading, error, refetch } = useQuery({
     queryKey: ['project', id],
     queryFn: () => projectsApi.getProject(id!),
     enabled: !!id,
     refetchInterval: (data) => {
-      // Refetch every 5 seconds if project is in progress
-      return data?.status === 'IN_PROGRESS' ? 5000 : false
+      // Only poll occasionally as fallback when not using WebSocket
+      return isWebSocketConnected ? 30000 : (data?.status === 'IN_PROGRESS' ? 10000 : false)
     }
   })
 
@@ -40,21 +43,21 @@ const ProjectDetail: React.FC = () => {
     queryKey: ['project-tasks', id],
     queryFn: () => projectsApi.getProjectTasks(id!),
     enabled: !!id,
-    refetchInterval: 5000 // Refetch tasks every 5 seconds
+    refetchInterval: isWebSocketConnected ? false : 10000 // Disable polling when WebSocket is active
   })
 
   const { data: artifacts } = useQuery({
     queryKey: ['project-artifacts', id],
     queryFn: () => projectsApi.getProjectArtifacts(id!),
     enabled: !!id,
-    refetchInterval: 10000 // Refetch artifacts every 10 seconds
+    refetchInterval: isWebSocketConnected ? false : 15000 // Disable polling when WebSocket is active
   })
 
   const { data: status } = useQuery({
     queryKey: ['project-status', id],
     queryFn: () => projectsApi.getProjectStatus(id!),
     enabled: !!id,
-    refetchInterval: 3000 // Refetch status every 3 seconds
+    refetchInterval: isWebSocketConnected ? false : 5000 // Disable polling when WebSocket is active
   })
 
   useEffect(() => {
@@ -62,6 +65,63 @@ const ProjectDetail: React.FC = () => {
       dispatch(setCurrentProject(project))
     }
   }, [project, dispatch])
+
+  // WebSocket connection setup
+  useEffect(() => {
+    if (!id) return
+
+    const wsEndpoint = import.meta.env.VITE_WEBSOCKET_ENDPOINT || 'wss://localhost:3001'
+    
+    const handleMessage = (message: WebSocketMessage) => {
+      console.log('WebSocket message received:', message)
+      
+      // Invalidate and refetch relevant queries based on message type
+      if (message.type === 'task_update') {
+        queryClient.invalidateQueries({ queryKey: ['project-tasks', id] })
+        queryClient.invalidateQueries({ queryKey: ['project-status', id] })
+      } else if (message.type === 'project_update') {
+        queryClient.invalidateQueries({ queryKey: ['project', id] })
+        queryClient.invalidateQueries({ queryKey: ['project-status', id] })
+        queryClient.invalidateQueries({ queryKey: ['project-artifacts', id] })
+      }
+    }
+
+    const handleError = (error: Event) => {
+      console.error('WebSocket error:', error)
+      setIsWebSocketConnected(false)
+    }
+
+    const handleClose = () => {
+      console.log('WebSocket disconnected')
+      setIsWebSocketConnected(false)
+    }
+
+    // Connect to WebSocket
+    webSocketService.connect(wsEndpoint, handleMessage, handleError, handleClose)
+    
+    // Subscribe to project updates
+    if (webSocketService.isConnected()) {
+      webSocketService.subscribe(id)
+      setIsWebSocketConnected(true)
+    }
+
+    // Cleanup on unmount
+    return () => {
+      webSocketService.unsubscribe()
+      webSocketService.disconnect()
+      setIsWebSocketConnected(false)
+    }
+  }, [id, queryClient])
+
+  // Monitor WebSocket connection status
+  useEffect(() => {
+    const checkConnection = () => {
+      setIsWebSocketConnected(webSocketService.isConnected())
+    }
+
+    const interval = setInterval(checkConnection, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -131,6 +191,19 @@ const ProjectDetail: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            {isWebSocketConnected ? (
+              <div className="flex items-center text-green-600">
+                <Wifi className="h-4 w-4" />
+                <span className="text-sm">Live</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-gray-400">
+                <WifiOff className="h-4 w-4" />
+                <span className="text-sm">Polling</span>
+              </div>
+            )}
+          </div>
           <button
             onClick={() => refetch()}
             className="btn-secondary flex items-center space-x-2"

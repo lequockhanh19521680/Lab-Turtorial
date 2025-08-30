@@ -1,8 +1,9 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../store'
 import { toggleSidebar } from '../store/slices/uiSlice'
+import { authService } from '../services/auth'
 import { 
   Menu, 
   X, 
@@ -11,7 +12,8 @@ import {
   Settings, 
   User, 
   Bell,
-  Zap 
+  Zap,
+  LogOut
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -20,8 +22,10 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation()
+  const navigate = useNavigate()
   const dispatch = useDispatch()
   const { sidebarOpen } = useSelector((state: RootState) => state.ui)
+  const currentUser = authService.getCurrentUser()
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -31,6 +35,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const isActivePath = (path: string) => {
     return location.pathname === path
+  }
+
+  const handleLogout = () => {
+    authService.signOut()
+    navigate('/login')
   }
 
   return (
@@ -84,12 +93,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-900 truncate">
-                John Doe
+                {currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email : 'User'}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                john@example.com
+                {currentUser?.email || 'user@example.com'}
               </p>
             </div>
+            <button
+              onClick={handleLogout}
+              className="flex-shrink-0 p-1 rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>

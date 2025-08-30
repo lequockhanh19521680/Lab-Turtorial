@@ -1,5 +1,6 @@
 import { Context } from 'aws-lambda'
 import { DatabaseService } from '../utils/database'
+import { queueNextAgent, getNextAgent } from '../utils/sqs'
 import { AgentExecutionContext, AgentResponse } from '../models'
 
 const db = new DatabaseService()
@@ -27,6 +28,12 @@ export const handler = async (event: AgentExecutionContext, _context: Context): 
         technicalRequirements: generateTechnicalRequirements(project.requestPrompt),
       },
     })
+
+    // Queue the next agent in the sequence
+    const nextAgent = getNextAgent('ProductManagerAgent')
+    if (nextAgent) {
+      await queueNextAgent(projectId, nextAgent)
+    }
 
     return {
       success: true,
