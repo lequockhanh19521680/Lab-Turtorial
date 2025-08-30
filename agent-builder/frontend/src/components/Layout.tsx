@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../store'
@@ -25,7 +25,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { sidebarOpen } = useSelector((state: RootState) => state.ui)
-  const currentUser = authService.getCurrentUser()
+  const [currentUser, setCurrentUser] = useState<any>(null)
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const user = await authService.getCurrentUser()
+        setCurrentUser(user)
+      } catch (error) {
+        console.error('Error loading current user:', error)
+      }
+    }
+
+    loadCurrentUser()
+  }, [])
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -37,8 +50,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return location.pathname === path
   }
 
-  const handleLogout = () => {
-    authService.signOut()
+  const handleLogout = async () => {
+    await authService.signOut()
     navigate('/login')
   }
 

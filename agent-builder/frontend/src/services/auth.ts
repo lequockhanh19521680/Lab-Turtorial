@@ -5,6 +5,7 @@ import {
   InitiateAuthCommand,
   AuthFlowType
 } from '@aws-sdk/client-cognito-identity-provider'
+import { mockAuth } from './mock'
 
 // These should be environment variables in production
 const COGNITO_CONFIG = {
@@ -16,6 +17,9 @@ const COGNITO_CONFIG = {
 const cognitoClient = new CognitoIdentityProviderClient({
   region: COGNITO_CONFIG.region
 })
+
+// Check if we should use mock API
+const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true'
 
 export interface SignUpRequest {
   email: string
@@ -44,6 +48,21 @@ export interface AuthResponse {
 export const authService = {
   // Sign up new user
   signUp: async (data: SignUpRequest): Promise<{ userSub: string; needsConfirmation: boolean }> => {
+    if (USE_MOCK_API) {
+      // For mock API, simulate sign up
+      await mockAuth.register({
+        email: data.email,
+        password: data.password,
+        givenName: data.firstName,
+        familyName: data.lastName
+      })
+      
+      return {
+        userSub: 'mock-user-sub-' + Date.now(),
+        needsConfirmation: false // Skip confirmation for mock
+      }
+    }
+    
     try {
       const command = new SignUpCommand({
         ClientId: COGNITO_CONFIG.clientId,
@@ -79,6 +98,11 @@ export const authService = {
 
   // Confirm sign up with verification code
   confirmSignUp: async (email: string, confirmationCode: string): Promise<void> => {
+    if (USE_MOCK_API) {
+      // For mock API, confirmation always succeeds
+      return
+    }
+    
     try {
       const command = new ConfirmSignUpCommand({
         ClientId: COGNITO_CONFIG.clientId,
@@ -95,6 +119,30 @@ export const authService = {
 
   // Sign in user
   signIn: async (data: SignInRequest): Promise<AuthResponse> => {
+    if (USE_MOCK_API) {
+      const mockResponse = await mockAuth.login(data.email, data.password)
+      
+      const authResponse: AuthResponse = {
+        accessToken: mockResponse.token,
+        idToken: mockResponse.token,
+        refreshToken: mockResponse.token,
+        user: {
+          id: mockResponse.user.id,
+          email: mockResponse.user.email,
+          firstName: mockResponse.user.givenName,
+          lastName: mockResponse.user.familyName
+        }
+      }
+
+      // Store tokens in localStorage
+      localStorage.setItem('authToken', mockResponse.token)
+      localStorage.setItem('idToken', mockResponse.token)
+      localStorage.setItem('refreshToken', mockResponse.token)
+      localStorage.setItem('user', JSON.stringify(authResponse.user))
+
+      return authResponse
+    }
+    
     try {
       const command = new InitiateAuthCommand({
         ClientId: COGNITO_CONFIG.clientId,
@@ -150,7 +198,11 @@ export const authService = {
   },
 
   // Sign out user
-  signOut: (): void => {
+  signOut: async (): Promise<void> => {
+    if (USE_MOCK_API) {
+      await mockAuth.logout()
+    }
+    
     localStorage.removeItem('authToken')
     localStorage.removeItem('idToken')
     localStorage.removeItem('refreshToken')
@@ -161,6 +213,11 @@ export const authService = {
   isAuthenticated: (): boolean => {
     const token = localStorage.getItem('authToken')
     if (!token) return false
+
+    if (USE_MOCK_API) {
+      // For mock API, token is always valid if it exists
+      return true
+    }
 
     try {
       // Basic token expiration check
@@ -173,7 +230,16 @@ export const authService = {
   },
 
   // Get current user from localStorage
-  getCurrentUser: () => {
+  getCurrentUser: async () => {
+    if (USE_MOCK_API) {
+      try {
+        return await mockAuth.getCurrentUser()
+      } catch {
+        const userStr = localStorage.getItem('user')
+        return userStr ? JSON.parse(userStr) : null
+      }
+    }
+    
     const userStr = localStorage.getItem('user')
     return userStr ? JSON.parse(userStr) : null
   },
