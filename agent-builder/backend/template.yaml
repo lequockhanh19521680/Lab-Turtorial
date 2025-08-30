@@ -1,0 +1,407 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Agent Builder - Autonomous Software Factory Backend'
+
+Globals:
+  Function:
+    Timeout: 300
+    Runtime: nodejs18.x
+    MemorySize: 1024
+    Environment:
+      Variables:
+        NODE_ENV: production
+        PROJECTS_TABLE: !Ref ProjectsTable
+        TASKS_TABLE: !Ref TasksTable
+        ARTIFACTS_TABLE: !Ref ArtifactsTable
+        ARTIFACTS_BUCKET: !Ref ArtifactsBucket
+        OPENAI_API_KEY: !Ref OpenAIApiKey
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  OpenAIApiKey:
+    Type: String
+    NoEcho: true
+    Description: OpenAI API Key for AI agents
+
+Resources:
+  # API Gateway
+  AgentBuilderApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+
+  # Lambda Functions
+  ProjectsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: projects.handler
+      Events:
+        GetProjects:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects
+            Method: get
+        CreateProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects
+            Method: post
+        GetProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}
+            Method: get
+        UpdateProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}
+            Method: patch
+        DeleteProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}
+            Method: delete
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArtifactsTable
+
+  OrchestratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: orchestrator.handler
+      Events:
+        StartOrchestration:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /agents/orchestrator
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - StepFunctionsExecutionPolicy:
+            StateMachineName: !Ref AgentWorkflowStateMachine
+
+  TasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: tasks.handler
+      Events:
+        GetProjectTasks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}/tasks
+            Method: get
+        GetProjectStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}/status
+            Method: get
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+
+  ArtifactsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: artifacts.handler
+      Events:
+        GetProjectArtifacts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}/artifacts
+            Method: get
+        CreateArtifact:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /artifacts
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArtifactsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ArtifactsBucket
+
+  # DynamoDB Tables
+  ProjectsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'agent-builder-projects-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: projectId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'agent-builder-tasks-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: taskId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: projectId
+          KeyType: HASH
+        - AttributeName: taskId
+          KeyType: RANGE
+
+  ArtifactsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'agent-builder-artifacts-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: artifactId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: projectId
+          KeyType: HASH
+        - AttributeName: artifactId
+          KeyType: RANGE
+
+  # S3 Bucket for artifacts
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'agent-builder-artifacts-${Environment}-${AWS::AccountId}'
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ['*']
+
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub 'agent-builder-users-${Environment}'
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub 'agent-builder-client-${Environment}'
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ADMIN_NO_SRP_AUTH
+        - USER_PASSWORD_AUTH
+
+  # Step Functions for Agent Workflow
+  AgentWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub 'agent-builder-workflow-${Environment}'
+      RoleArn: !GetAtt StepFunctionsRole.Arn
+      DefinitionString: !Sub |
+        {
+          "Comment": "Agent Builder Workflow",
+          "StartAt": "ProductManagerAgent",
+          "States": {
+            "ProductManagerAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "${ProductManagerFunction}",
+                "Payload.$": "$"
+              },
+              "Next": "BackendEngineerAgent"
+            },
+            "BackendEngineerAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "${BackendEngineerFunction}",
+                "Payload.$": "$"
+              },
+              "Next": "FrontendEngineerAgent"
+            },
+            "FrontendEngineerAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "${FrontendEngineerFunction}",
+                "Payload.$": "$"
+              },
+              "Next": "DevOpsEngineerAgent"
+            },
+            "DevOpsEngineerAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "${DevOpsEngineerFunction}",
+                "Payload.$": "$"
+              },
+              "End": true
+            }
+          }
+        }
+
+  # AI Agent Functions
+  ProductManagerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/agents/
+      Handler: productManager.handler
+      Timeout: 600
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArtifactsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ArtifactsBucket
+
+  BackendEngineerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/agents/
+      Handler: backendEngineer.handler
+      Timeout: 600
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArtifactsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ArtifactsBucket
+
+  FrontendEngineerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/agents/
+      Handler: frontendEngineer.handler
+      Timeout: 600
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArtifactsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ArtifactsBucket
+
+  DevOpsEngineerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/agents/
+      Handler: devopsEngineer.handler
+      Timeout: 600
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArtifactsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ArtifactsBucket
+
+  # IAM Role for Step Functions
+  StepFunctionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaInvokePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt ProductManagerFunction.Arn
+                  - !GetAtt BackendEngineerFunction.Arn
+                  - !GetAtt FrontendEngineerFunction.Arn
+                  - !GetAtt DevOpsEngineerFunction.Arn
+
+Outputs:
+  ApiGatewayEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${AgentBuilderApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiEndpoint"
+  
+  UserPoolId:
+    Description: "Cognito User Pool ID"
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub "${AWS::StackName}-UserPoolId"
+  
+  UserPoolClientId:
+    Description: "Cognito User Pool Client ID"
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub "${AWS::StackName}-UserPoolClientId"
