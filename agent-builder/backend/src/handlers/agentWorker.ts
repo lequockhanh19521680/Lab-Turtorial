@@ -1,13 +1,16 @@
 import { SQSEvent, SQSRecord, Context } from 'aws-lambda'
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+import { SNSClient, PublishCommand } from '@aws-sdk/client-sns'
 import { DatabaseService } from '../utils/database'
 
 const lambdaClient = new LambdaClient({})
 const sqsClient = new SQSClient({})
+const snsClient = new SNSClient({})
 const db = new DatabaseService()
 
 const AGENT_TASK_QUEUE_URL = process.env.AGENT_TASK_QUEUE_URL!
+const PROJECT_NOTIFICATION_TOPIC_ARN = process.env.PROJECT_NOTIFICATION_TOPIC_ARN!
 const FUNCTION_PREFIX = process.env.AWS_LAMBDA_FUNCTION_NAME?.split('-')[0] || 'agent-builder'
 
 interface AgentTaskMessage {
@@ -82,6 +85,14 @@ const processAgentTask = async (record: SQSRecord): Promise<void> => {
             progress: 100,
           })
 
+          // Send notification about task completion
+          await sendNotification(projectId, 'task_update', {
+            taskId: agentTask.taskId,
+            agentName,
+            status: 'DONE',
+            progress: 100
+          })
+
           console.log(`Agent ${agentName} completed successfully for project ${projectId}`)
 
           // Queue the next agent in the sequence
@@ -91,6 +102,13 @@ const processAgentTask = async (record: SQSRecord): Promise<void> => {
           } else {
             // All agents completed, update project status
             await db.updateProject(projectId, { status: 'COMPLETED' })
+            
+            // Send notification about project completion
+            await sendNotification(projectId, 'project_update', {
+              status: 'COMPLETED',
+              message: 'All agents completed successfully'
+            })
+            
             console.log(`All agents completed for project ${projectId}`)
           }
         } else {
@@ -109,8 +127,23 @@ const processAgentTask = async (record: SQSRecord): Promise<void> => {
         errorMessage: (agentError as Error).message,
       })
 
+      // Send notification about task failure
+      await sendNotification(projectId, 'task_update', {
+        taskId: agentTask.taskId,
+        agentName,
+        status: 'FAILED',
+        error: (agentError as Error).message
+      })
+
       // Mark project as failed
       await db.updateProject(projectId, { status: 'FAILED' })
+      
+      // Send notification about project failure
+      await sendNotification(projectId, 'project_update', {
+        status: 'FAILED',
+        message: `Agent ${agentName} failed`,
+        error: (agentError as Error).message
+      })
     }
 
   } catch (error) {
@@ -170,5 +203,32 @@ const queueNextAgent = async (projectId: string, agentName: string): Promise<voi
   } catch (error) {
     console.error(`Failed to queue next agent ${agentName}:`, error)
     throw error
+  }
+}
+
+const sendNotification = async (
+  projectId: string, 
+  type: 'task_update' | 'project_update' | 'agent_complete', 
+  data: any
+): Promise<void> => {
+  try {
+    const message = {
+      projectId,
+      type,
+      data,
+      timestamp: new Date().toISOString()
+    }
+
+    const command = new PublishCommand({
+      TopicArn: PROJECT_NOTIFICATION_TOPIC_ARN,
+      Message: JSON.stringify(message),
+      Subject: `Agent Builder - ${type} for project ${projectId}`
+    })
+
+    await snsClient.send(command)
+    console.log(`Notification sent for project ${projectId}, type: ${type}`)
+  } catch (error) {
+    console.error('Failed to send notification:', error)
+    // Don't throw error here to avoid failing the main process
   }
 }
