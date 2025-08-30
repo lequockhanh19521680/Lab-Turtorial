@@ -14,6 +14,7 @@ Globals:
         TASKS_TABLE: !Ref TasksTable
         ARTIFACTS_TABLE: !Ref ArtifactsTable
         ARTIFACTS_BUCKET: !Ref ArtifactsBucket
+        AGENT_TASK_QUEUE_URL: !Ref AgentTaskQueue
         OPENAI_API_KEY: !Ref OpenAIApiKey
 
 Parameters:
@@ -27,6 +28,23 @@ Parameters:
     Description: OpenAI API Key for AI agents
 
 Resources:
+  # SQS Queue for Agent Task Processing
+  AgentTaskQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'agent-builder-task-queue-${Environment}'
+      VisibilityTimeoutSeconds: 900  # 15 minutes for long-running agent tasks
+      MessageRetentionPeriod: 1209600  # 14 days
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AgentTaskDLQ.Arn
+        maxReceiveCount: 3
+
+  # Dead Letter Queue for failed tasks
+  AgentTaskDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'agent-builder-task-dlq-${Environment}'
+      MessageRetentionPeriod: 1209600  # 14 days
   # API Gateway
   AgentBuilderApi:
     Type: AWS::Serverless::Api
@@ -104,8 +122,41 @@ Resources:
             TableName: !Ref ProjectsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref TasksTable
-        - StepFunctionsExecutionPolicy:
-            StateMachineName: !Ref AgentWorkflowStateMachine
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AgentTaskQueue.QueueName
+
+  # New Agent Worker Function to process SQS messages
+  AgentWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: agentWorker.handler
+      Timeout: 900  # 15 minutes for agent processing
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AgentTaskQueue.Arn
+            BatchSize: 1  # Process one task at a time
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArtifactsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ArtifactsBucket
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AgentTaskQueue.QueueName
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProductManagerFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref BackendEngineerFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FrontendEngineerFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DevOpsEngineerFunction
 
   TasksFunction:
     Type: AWS::Serverless::Function
@@ -313,6 +364,8 @@ Resources:
             TableName: !Ref ArtifactsTable
         - S3CrudPolicy:
             BucketName: !Ref ArtifactsBucket
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AgentTaskQueue.QueueName
 
   BackendEngineerFunction:
     Type: AWS::Serverless::Function
@@ -329,6 +382,8 @@ Resources:
             TableName: !Ref ArtifactsTable
         - S3CrudPolicy:
             BucketName: !Ref ArtifactsBucket
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AgentTaskQueue.QueueName
 
   FrontendEngineerFunction:
     Type: AWS::Serverless::Function
@@ -345,6 +400,8 @@ Resources:
             TableName: !Ref ArtifactsTable
         - S3CrudPolicy:
             BucketName: !Ref ArtifactsBucket
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AgentTaskQueue.QueueName
 
   DevOpsEngineerFunction:
     Type: AWS::Serverless::Function
@@ -361,6 +418,8 @@ Resources:
             TableName: !Ref ArtifactsTable
         - S3CrudPolicy:
             BucketName: !Ref ArtifactsBucket
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AgentTaskQueue.QueueName
 
   # IAM Role for Step Functions
   StepFunctionsRole:
