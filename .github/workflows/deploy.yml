@@ -1,0 +1,348 @@
+name: Deploy Agent Builder
+
+on:
+  push:
+    branches:
+      - main        # Production deployment
+      - develop     # Staging deployment
+    paths:
+      - 'agent-builder/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'agent-builder/**'
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: 18
+
+jobs:
+  # Quality checks for all branches
+  quality-checks:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./agent-builder
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'agent-builder/package-lock.json'
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build applications
+        run: npm run build
+
+      - name: Check test coverage
+        run: cd backend && npm run test -- --coverage --coverageReporters=text-summary
+
+  # Security scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    defaults:
+      run:
+        working-directory: ./agent-builder
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'agent-builder/package-lock.json'
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+
+      - name: Run dependency vulnerability check
+        run: |
+          cd backend && npx audit-ci --moderate
+          cd ../frontend && npx audit-ci --moderate
+
+  # Deploy to staging environment
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [quality-checks, security-scan]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+    defaults:
+      run:
+        working-directory: ./agent-builder
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'agent-builder/package-lock.json'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Build backend
+        run: npm run build:backend
+
+      - name: Deploy backend to staging
+        run: |
+          cd backend
+          sam deploy \
+            --stack-name agent-builder-staging \
+            --parameter-overrides Environment=staging \
+            --region ${{ env.AWS_REGION }} \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --resolve-s3
+
+      - name: Get staging API endpoint
+        id: api-endpoint
+        run: |
+          API_ENDPOINT=$(aws cloudformation describe-stacks \
+            --stack-name agent-builder-staging \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiGatewayEndpoint`].OutputValue' \
+            --output text)
+          echo "endpoint=$API_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Build frontend for staging
+        run: |
+          cd frontend
+          export VITE_API_BASE_URL=${{ steps.api-endpoint.outputs.endpoint }}
+          export VITE_ENVIRONMENT=staging
+          npm run build
+
+      - name: Deploy frontend to staging S3
+        run: |
+          cd frontend
+          BUCKET_NAME="agent-builder-frontend-staging"
+          
+          # Create S3 bucket if it doesn't exist
+          aws s3 mb s3://$BUCKET_NAME --region ${{ env.AWS_REGION }} 2>/dev/null || true
+          
+          # Configure bucket for static website hosting
+          aws s3 website s3://$BUCKET_NAME \
+            --index-document index.html \
+            --error-document index.html
+          
+          # Upload files
+          aws s3 sync dist/ s3://$BUCKET_NAME --delete
+          
+          # Set public read permissions
+          aws s3api put-bucket-policy \
+            --bucket $BUCKET_NAME \
+            --policy '{
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Sid": "PublicReadGetObject",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::'$BUCKET_NAME'/*"
+              }]
+            }'
+
+      - name: Output staging URLs
+        run: |
+          echo "🚀 Staging deployment complete!"
+          echo "Frontend: http://agent-builder-frontend-staging.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          echo "API: ${{ steps.api-endpoint.outputs.endpoint }}"
+
+  # Deploy to production environment
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [quality-checks, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    defaults:
+      run:
+        working-directory: ./agent-builder
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'agent-builder/package-lock.json'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Build backend
+        run: npm run build:backend
+
+      - name: Deploy backend to production
+        run: |
+          cd backend
+          sam deploy \
+            --stack-name agent-builder-production \
+            --parameter-overrides Environment=production \
+            --region ${{ env.AWS_REGION }} \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --resolve-s3
+
+      - name: Get production API endpoint
+        id: api-endpoint
+        run: |
+          API_ENDPOINT=$(aws cloudformation describe-stacks \
+            --stack-name agent-builder-production \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiGatewayEndpoint`].OutputValue' \
+            --output text)
+          echo "endpoint=$API_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Build frontend for production
+        run: |
+          cd frontend
+          export VITE_API_BASE_URL=${{ steps.api-endpoint.outputs.endpoint }}
+          export VITE_ENVIRONMENT=production
+          npm run build
+
+      - name: Deploy frontend to production S3
+        run: |
+          cd frontend
+          BUCKET_NAME="agent-builder-frontend-production"
+          
+          # Create S3 bucket if it doesn't exist
+          aws s3 mb s3://$BUCKET_NAME --region ${{ env.AWS_REGION }} 2>/dev/null || true
+          
+          # Configure bucket for static website hosting
+          aws s3 website s3://$BUCKET_NAME \
+            --index-document index.html \
+            --error-document index.html
+          
+          # Upload files
+          aws s3 sync dist/ s3://$BUCKET_NAME --delete
+          
+          # Set public read permissions
+          aws s3api put-bucket-policy \
+            --bucket $BUCKET_NAME \
+            --policy '{
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Sid": "PublicReadGetObject",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::'$BUCKET_NAME'/*"
+              }]
+            }'
+
+      - name: Setup CloudFront distribution (optional)
+        run: |
+          cd frontend
+          BUCKET_NAME="agent-builder-frontend-production"
+          
+          # Check if CloudFront distribution exists
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='Agent Builder Production'].Id" \
+            --output text 2>/dev/null || echo "")
+          
+          if [ -z "$DISTRIBUTION_ID" ]; then
+            echo "Creating CloudFront distribution..."
+            # Create distribution configuration
+            cat > distribution-config.json << EOF
+          {
+            "CallerReference": "agent-builder-$(date +%s)",
+            "Comment": "Agent Builder Production",
+            "DefaultRootObject": "index.html",
+            "Origins": {
+              "Quantity": 1,
+              "Items": [
+                {
+                  "Id": "S3-$BUCKET_NAME",
+                  "DomainName": "$BUCKET_NAME.s3-website-${{ env.AWS_REGION }}.amazonaws.com",
+                  "CustomOriginConfig": {
+                    "HTTPPort": 80,
+                    "HTTPSPort": 443,
+                    "OriginProtocolPolicy": "http-only"
+                  }
+                }
+              ]
+            },
+            "DefaultCacheBehavior": {
+              "TargetOriginId": "S3-$BUCKET_NAME",
+              "ViewerProtocolPolicy": "redirect-to-https",
+              "TrustedSigners": {
+                "Enabled": false,
+                "Quantity": 0
+              },
+              "ForwardedValues": {
+                "QueryString": false,
+                "Cookies": {
+                  "Forward": "none"
+                }
+              },
+              "MinTTL": 0
+            },
+            "Enabled": true,
+            "PriceClass": "PriceClass_100"
+          }
+          EOF
+            
+            DISTRIBUTION_ID=$(aws cloudfront create-distribution \
+              --distribution-config file://distribution-config.json \
+              --query 'Distribution.Id' \
+              --output text)
+            
+            echo "Created CloudFront distribution: $DISTRIBUTION_ID"
+          fi
+
+      - name: Output production URLs
+        run: |
+          echo "🎉 Production deployment complete!"
+          echo "Frontend: http://agent-builder-frontend-production.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          echo "API: ${{ steps.api-endpoint.outputs.endpoint }}"
+          echo ""
+          echo "Next steps:"
+          echo "1. Configure custom domain (optional)"
+          echo "2. Set up CloudFront distribution (recommended)"
+          echo "3. Configure monitoring and alerts"

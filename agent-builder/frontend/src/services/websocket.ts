@@ -1,8 +1,14 @@
+import { simulateProjectProgress, stopProjectSimulation } from './mock'
+
 export interface WebSocketMessage {
-  type: 'task_update' | 'project_update' | 'agent_complete'
+  type: 'task_update' | 'project_update' | 'agent_complete' | 'TASK_PROGRESS' | 'TASK_STARTED' | 'PROJECT_COMPLETED'
   projectId: string
   data: any
   timestamp: string
+  taskId?: string
+  progress?: number
+  task?: any
+  project?: any
 }
 
 export interface WebSocketConnection {
@@ -14,12 +20,16 @@ export interface WebSocketConnection {
   onClose: () => void
 }
 
+// Check if we should use mock API
+const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true'
+
 class WebSocketService {
   private connection: WebSocketConnection | null = null
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectInterval = 3000
   private reconnectTimer: NodeJS.Timeout | null = null
+  private mockSimulationActive = false
 
   connect(
     endpoint: string, 
@@ -29,6 +39,20 @@ class WebSocketService {
   ): void {
     if (this.connection?.isConnected) {
       console.log('WebSocket already connected')
+      return
+    }
+
+    if (USE_MOCK_API) {
+      // For mock API, simulate WebSocket connection
+      console.log('Using mock WebSocket connection')
+      this.connection = {
+        ws: null,
+        isConnected: true,
+        projectId: null,
+        onMessage,
+        onError,
+        onClose
+      }
       return
     }
 
@@ -109,8 +133,38 @@ class WebSocketService {
   }
 
   subscribe(projectId: string): void {
-    if (!this.connection?.isConnected || !this.connection.ws) {
+    if (!this.connection?.isConnected) {
       console.warn('Cannot subscribe: WebSocket not connected')
+      return
+    }
+
+    if (USE_MOCK_API) {
+      // For mock API, start simulation
+      console.log(`Starting mock WebSocket simulation for project: ${projectId}`)
+      this.mockSimulationActive = true
+      this.connection.projectId = projectId
+      
+      simulateProjectProgress(projectId, (data) => {
+        if (this.connection && this.mockSimulationActive) {
+          // Convert mock data to WebSocket message format
+          const message: WebSocketMessage = {
+            type: data.type,
+            projectId: data.projectId,
+            data: data,
+            timestamp: new Date().toISOString(),
+            taskId: data.taskId,
+            progress: data.progress,
+            task: data.task,
+            project: data.project
+          }
+          this.connection.onMessage(message)
+        }
+      })
+      return
+    }
+
+    if (!this.connection.ws) {
+      console.warn('Cannot subscribe: WebSocket instance not available')
       return
     }
 
@@ -125,8 +179,24 @@ class WebSocketService {
   }
 
   unsubscribe(): void {
-    if (!this.connection?.isConnected || !this.connection.ws) {
+    if (!this.connection?.isConnected) {
       console.warn('Cannot unsubscribe: WebSocket not connected')
+      return
+    }
+
+    if (USE_MOCK_API) {
+      // For mock API, stop simulation
+      if (this.connection.projectId) {
+        console.log(`Stopping mock WebSocket simulation for project: ${this.connection.projectId}`)
+        stopProjectSimulation(this.connection.projectId)
+        this.mockSimulationActive = false
+      }
+      this.connection.projectId = null
+      return
+    }
+
+    if (!this.connection.ws) {
+      console.warn('Cannot unsubscribe: WebSocket instance not available')
       return
     }
 
@@ -143,6 +213,16 @@ class WebSocketService {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
+    }
+
+    if (USE_MOCK_API) {
+      if (this.connection?.projectId) {
+        stopProjectSimulation(this.connection.projectId)
+        this.mockSimulationActive = false
+      }
+      this.connection = null
+      console.log('Mock WebSocket disconnected')
+      return
     }
 
     if (this.connection?.ws) {
