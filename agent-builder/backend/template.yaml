@@ -18,17 +18,13 @@ Globals:
         PROJECT_NOTIFICATION_TOPIC_ARN: !Ref ProjectNotificationTopic
         WEBSOCKET_API_ENDPOINT: !Sub '${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
         CONNECTIONS_TABLE: !Ref ConnectionsTable
-        OPENAI_API_KEY: !Ref OpenAIApiKey
+        # Secrets are now fetched from SSM at runtime
 
 Parameters:
   Environment:
     Type: String
     Default: dev
     AllowedValues: [dev, staging, prod]
-  OpenAIApiKey:
-    Type: String
-    NoEcho: true
-    Description: OpenAI API Key for AI agents
 
 Resources:
   # SQS Queue for Agent Task Processing
@@ -255,6 +251,12 @@ Resources:
             FunctionName: !Ref FrontendEngineerFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref DevOpsEngineerFunction
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
 
   TasksFunction:
     Type: AWS::Serverless::Function
@@ -489,6 +491,12 @@ Resources:
             BucketName: !Ref ArtifactsBucket
         - SQSSendMessagePolicy:
             QueueName: !GetAtt AgentTaskQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
 
   BackendEngineerFunction:
     Type: AWS::Serverless::Function
@@ -507,6 +515,12 @@ Resources:
             BucketName: !Ref ArtifactsBucket
         - SQSSendMessagePolicy:
             QueueName: !GetAtt AgentTaskQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
 
   FrontendEngineerFunction:
     Type: AWS::Serverless::Function
@@ -525,6 +539,12 @@ Resources:
             BucketName: !Ref ArtifactsBucket
         - SQSSendMessagePolicy:
             QueueName: !GetAtt AgentTaskQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
 
   DevOpsEngineerFunction:
     Type: AWS::Serverless::Function
@@ -543,6 +563,12 @@ Resources:
             BucketName: !Ref ArtifactsBucket
         - SQSSendMessagePolicy:
             QueueName: !GetAtt AgentTaskQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*'
 
   # WebSocket Lambda Functions
   OnConnectFunction:
