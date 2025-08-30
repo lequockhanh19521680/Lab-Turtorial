@@ -13,7 +13,7 @@ export interface Task {
   projectId: string
   taskId: string
   assignedAgent: string
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'FAILED'
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'FAILED' | 'PENDING_APPROVAL'
   dependencies: string[]
   outputArtifactId?: string
   description?: string
