@@ -7,16 +7,22 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run build && sam local start-api --port 3001 --host 0.0.0.0",
     "dev:frontend": "cd frontend && npm run dev -- --port 3000 --host 0.0.0.0",
-    "build": "npm run build:backend && npm run build:frontend",
+    "build": "npm run build:backend && npm run build:frontend && npm run build:cdk",
     "build:backend": "cd backend && npm run build",
     "build:frontend": "cd frontend && npm run build",
+    "build:cdk": "tsc",
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "cd backend && npm test",
     "test:frontend": "cd frontend && npm test",
     "lint": "npm run lint:backend && npm run lint:frontend",
     "lint:backend": "cd backend && npm run lint",
     "lint:frontend": "cd frontend && npm run lint",
-    "deploy": "cd backend && npm run deploy",
+    "deploy": "npm run build && cdk deploy",
+    "deploy:dev": "npm run build && cdk deploy --context environment=dev",
+    "deploy:prod": "npm run build && cdk deploy --context environment=prod",
+    "cdk:diff": "npm run build:cdk && cdk diff",
+    "cdk:synth": "npm run build:cdk && cdk synth",
+    "cdk:destroy": "cdk destroy",
     "sam:build": "cd backend && npm run sam:build",
     "sam:local": "cd backend && npm run sam:local",
     "install:all": "npm install && npm run install:backend && npm run install:frontend",
@@ -53,5 +59,13 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "aws-cdk": "^2.1027.0",
+    "aws-cdk-lib": "^2.213.0",
+    "constructs": "^10.4.2",
+    "jsonwebtoken": "^9.0.2",
+    "typescript": "^5.9.2",
+    "uuid": "^11.1.0"
   }
 }
