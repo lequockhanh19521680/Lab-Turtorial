@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useDispatch } from 'react-redux'
 import { projectsApi, CreateProjectRequest } from '../services/projects'
-import { addProject } from '../store/slices/projectsSlice'
+// import { addProject } from '../store/slices/projectsSlice'
 import { addNotification } from '../store/slices/uiSlice'
 import { Zap, Lightbulb, Code, Globe, Database } from 'lucide-react'
 

@@ -1,9 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-step-functions'
+// import { SFNClient } from '@aws-sdk/client-sfn'
 import { DatabaseService } from '../utils/database'
 import { createSuccessResponse, createErrorResponse, parseJSON, validateRequired } from '../utils/lambda'
 
-const sfnClient = new SFNClient({})
+// const sfnClient = new SFNClient({}) // For future Step Functions integration
 const db = new DatabaseService()
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -119,7 +119,7 @@ const simulateAgentExecution = async (projectId: string, agentName: string) => {
       await db.updateTask(projectId, agentTask.taskId, {
         status: 'FAILED',
         completedAt: new Date().toISOString(),
-        errorMessage: error.message,
+        errorMessage: (error as Error).message,
       })
     }
 

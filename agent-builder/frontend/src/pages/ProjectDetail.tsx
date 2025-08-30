@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useDispatch, useSelector } from 'react-redux'
-import { RootState } from '../store'
+import { useDispatch } from 'react-redux'
+// import { useSelector } from 'react-redux'
+// import { RootState } from '../store'
 import { setCurrentProject } from '../store/slices/projectsSlice'
 import { projectsApi } from '../services/projects'
 import TaskList from '../components/TaskList'
@@ -23,7 +24,7 @@ import { format } from 'date-fns'
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const dispatch = useDispatch()
-  const { currentProject } = useSelector((state: RootState) => state.projects)
+  // const { currentProject } = useSelector((state: RootState) => state.projects)
 
   const { data: project, isLoading, error, refetch } = useQuery({
     queryKey: ['project', id],
