@@ -1,0 +1,56 @@
+{
+  "name": "agent-builder",
+  "version": "0.1.0",
+  "description": "Agent Builder - Autonomous Software Factory",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run build && sam local start-api --port 3001 --host 0.0.0.0",
+    "dev:frontend": "cd frontend && npm run dev -- --port 3000 --host 0.0.0.0",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint",
+    "deploy": "cd backend && npm run deploy",
+    "sam:build": "cd backend && npm run sam:build",
+    "sam:local": "cd backend && npm run sam:local",
+    "install:all": "npm install && npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "keywords": [
+    "aws",
+    "serverless",
+    "react",
+    "typescript",
+    "lambda",
+    "dynamodb",
+    "cognito",
+    "ai",
+    "agent",
+    "automation"
+  ],
+  "author": "Agent Builder Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lequockhanh19521680/Lab-Turtorial.git",
+    "directory": "agent-builder"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
