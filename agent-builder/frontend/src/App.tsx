@@ -6,6 +6,7 @@ import ProjectDetail from './pages/ProjectDetail'
 import CreateProject from './pages/CreateProject'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import AuthCallback from './pages/AuthCallback'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         
         {/* Protected routes */}
         <Route path="/" element={

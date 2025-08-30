@@ -21,6 +21,7 @@
     "@aws-sdk/client-sfn": "^3.462.0",
     "@aws-sdk/client-sns": "^3.879.0",
     "@aws-sdk/client-sqs": "^3.879.0",
+    "@aws-sdk/client-ssm": "^3.879.0",
     "@aws-sdk/lib-dynamodb": "^3.462.0",
     "axios": "^1.6.2",
     "joi": "^17.11.0",
