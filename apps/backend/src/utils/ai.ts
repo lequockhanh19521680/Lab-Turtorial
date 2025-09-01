@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { getOpenAIApiKey } from "./ssm";
+import { getOpenAIApiKey } from "./ssm.js";
 
 let openaiClient: OpenAI | null = null;
 

@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { TaskService, ProjectService, Task } from "@lab-tutorial/infrastructure";
+import { TaskService, ProjectService, Task } from "../infrastructure/index.js";
 import { createSuccessResponse, createErrorResponse } from "../utils/lambda.js";
 
 const taskService = new TaskService();
@@ -66,7 +66,9 @@ const getProjectStatus = async (
     const completedTasks = tasks.filter(
       (task: Task) => task.status === "DONE"
     ).length;
-    const failedTasks = tasks.filter((task: Task) => task.status === "FAILED").length;
+    const failedTasks = tasks.filter(
+      (task: Task) => task.status === "FAILED"
+    ).length;
     const inProgressTasks = tasks.filter(
       (task: Task) => task.status === "IN_PROGRESS"
     );

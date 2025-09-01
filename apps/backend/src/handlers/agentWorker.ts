@@ -1,5 +1,4 @@
-import { SQSEvent, SQSRecord } from "aws-lambda/trigger/sqs";
-import { Context } from "aws-lambda";
+import { SQSEvent, SQSRecord, Context } from "aws-lambda";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { DatabaseService } from "../utils/database.js";

@@ -1,36 +1,46 @@
-import { Context } from 'aws-lambda'
-import { DatabaseService } from '../utils/database'
-import { generateDevOpsSpecs } from '../utils/ai'
-import { AgentExecutionContext, AgentResponse } from '../models'
+import { Context } from "aws-lambda";
+import { DatabaseService } from "../utils/database.js";
+import { generateDevOpsSpecs } from "../utils/ai.js";
+import { AgentExecutionContext, AgentResponse } from "../models/index.js";
 
-const db = new DatabaseService()
+const db = new DatabaseService();
 
-export const handler = async (event: AgentExecutionContext, _context: Context): Promise<AgentResponse> => {
-  console.log('DevOps Engineer Agent execution:', JSON.stringify(event, null, 2))
+export const handler = async (
+  event: AgentExecutionContext,
+  _context: Context
+): Promise<AgentResponse> => {
+  console.log(
+    "DevOps Engineer Agent execution:",
+    JSON.stringify(event, null, 2)
+  );
 
   try {
-    const { projectId, project, previousArtifacts } = event
+    const { projectId, project, previousArtifacts } = event;
 
     // Get specifications from previous artifacts
-    const frontendCode = previousArtifacts.find(a => a.artifactType === 'SOURCE_CODE' && a.title?.includes('Frontend'))
-    const backendCode = previousArtifacts.find(a => a.artifactType === 'SOURCE_CODE' && a.title?.includes('Backend'))
+    const frontendCode = previousArtifacts.find(
+      (a) => a.artifactType === "SOURCE_CODE" && a.title?.includes("Frontend")
+    );
+    const backendCode = previousArtifacts.find(
+      (a) => a.artifactType === "SOURCE_CODE" && a.title?.includes("Backend")
+    );
 
-    const frontendSpecs = frontendCode?.metadata || {}
-    const backendSpecs = backendCode?.metadata || {}
+    const frontendSpecs = frontendCode?.metadata || {};
+    const backendSpecs = backendCode?.metadata || {};
 
     // Generate DevOps specifications using AI
-    const devopsSpecs = await generateDevOpsSpecs(backendSpecs, frontendSpecs)
+    const devopsSpecs = await generateDevOpsSpecs(backendSpecs, frontendSpecs);
 
     // Create deployment artifacts
-    const artifacts = []
+    const artifacts = [];
 
     // Live application URL
     const deploymentArtifact = await db.createArtifact({
       projectId,
-      artifactType: 'DEPLOYMENT_URL',
-      location: `https://${projectId.toLowerCase().replace(/[^a-z0-9]/g, '-')}.agent-builder.app`,
-      version: '1.0',
-      title: 'Live Application',
+      artifactType: "DEPLOYMENT_URL",
+      location: `https://${projectId.toLowerCase().replace(/[^a-z0-9]/g, "-")}.agent-builder.app`,
+      version: "1.0",
+      title: "Live Application",
       description: `Deployed ${project.projectName} running on AWS`,
       metadata: {
         infrastructure: devopsSpecs.infrastructure,
@@ -38,49 +48,51 @@ export const handler = async (event: AgentExecutionContext, _context: Context): 
         monitoring: devopsSpecs.monitoring,
         security: devopsSpecs.security,
         generatedAt: new Date().toISOString(),
-        aiGenerated: true
+        aiGenerated: true,
       },
-    })
+    });
 
-    artifacts.push(deploymentArtifact)
+    artifacts.push(deploymentArtifact);
 
     // Test report
     const testArtifact = await db.createArtifact({
       projectId,
-      artifactType: 'TEST_REPORT',
+      artifactType: "TEST_REPORT",
       location: `https://reports.agent-builder.app/${projectId}/tests.html`,
-      version: '1.0',
-      title: 'Test Report',
-      description: 'Automated test results and quality metrics',
+      version: "1.0",
+      title: "Test Report",
+      description: "Automated test results and quality metrics",
       metadata: {
-        unitTests: 'Jest + React Testing Library',
-        e2eTests: 'Playwright',
-        coverage: '85%',
-        performance: 'Lighthouse score: 95/100',
-        security: 'OWASP security scan passed',
+        unitTests: "Jest + React Testing Library",
+        e2eTests: "Playwright",
+        coverage: "85%",
+        performance: "Lighthouse score: 95/100",
+        security: "OWASP security scan passed",
       },
-    })
+    });
 
-    artifacts.push(testArtifact)
+    artifacts.push(testArtifact);
 
     return {
       success: true,
       artifacts,
       metadata: {
-        deploymentTime: '12 minutes',
-        infrastructure: devopsSpecs.infrastructure.platform || 'Fully serverless on AWS',
-        scalability: 'Auto-scaling enabled',
-        monitoring: devopsSpecs.monitoring.logging || 'CloudWatch + custom dashboards',
-        backups: 'Daily automated backups',
-        aiGenerated: true
+        deploymentTime: "12 minutes",
+        infrastructure:
+          devopsSpecs.infrastructure.platform || "Fully serverless on AWS",
+        scalability: "Auto-scaling enabled",
+        monitoring:
+          devopsSpecs.monitoring.logging || "CloudWatch + custom dashboards",
+        backups: "Daily automated backups",
+        aiGenerated: true,
       },
-    }
+    };
   } catch (error) {
-    console.error('DevOps Engineer Agent error:', error)
+    console.error("DevOps Engineer Agent error:", error);
     return {
       success: false,
       artifacts: [],
       errorMessage: (error as Error).message,
-    }
+    };
   }
-}
+};

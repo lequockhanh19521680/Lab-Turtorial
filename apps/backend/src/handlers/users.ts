@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { UserService } from "@lab-tutorial/infrastructure";
+import { UserService } from "../infrastructure/index.js";
 import { validateRequestBody } from "../utils/validation.js";
 import {
   createSuccessResponse,
@@ -8,14 +8,14 @@ import {
   parseJSON,
 } from "../utils/lambda.js";
 import jwt from "jsonwebtoken";
-import { z } from 'zod';
+import { z } from "zod";
 
 // Local schema for user profile updates
 const UpdateUserProfileRequestSchema = z.object({
-  name: z.string().max(100, 'Name too long').optional(),
-  givenName: z.string().max(50, 'Given name too long').optional(),
-  familyName: z.string().max(50, 'Family name too long').optional(),
-  picture: z.string().url('Invalid picture URL').optional(),
+  name: z.string().max(100, "Name too long").optional(),
+  givenName: z.string().max(50, "Given name too long").optional(),
+  familyName: z.string().max(50, "Family name too long").optional(),
+  picture: z.string().url("Invalid picture URL").optional(),
 });
 
 const userService = new UserService();
@@ -54,7 +54,9 @@ export const handler = async (
   }
 };
 
-async function getUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function getUserProfile(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
   try {
     const userId = getUserIdFromEvent(event);
     if (!userId) {
@@ -73,7 +75,9 @@ async function getUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   }
 }
 
-async function createOrUpdateUser(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function createOrUpdateUser(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
   try {
     if (!event.body) {
       return createErrorResponse(400, "Request body is required");
@@ -86,7 +90,7 @@ async function createOrUpdateUser(event: APIGatewayProxyEvent): Promise<APIGatew
 
     // Extract user information from JWT token or body
     let userData;
-    
+
     // If this is a Google OAuth callback, extract from token
     if (body.idToken) {
       try {
@@ -111,8 +115,17 @@ async function createOrUpdateUser(event: APIGatewayProxyEvent): Promise<APIGatew
       }
     } else {
       // Direct user creation/update
-      const { userId, email, name, givenName, familyName, picture, provider, providerUserId } = body;
-      
+      const {
+        userId,
+        email,
+        name,
+        givenName,
+        familyName,
+        picture,
+        provider,
+        providerUserId,
+      } = body;
+
       if (!userId || !email) {
         return createErrorResponse(400, "userId and email are required");
       }
@@ -137,7 +150,9 @@ async function createOrUpdateUser(event: APIGatewayProxyEvent): Promise<APIGatew
   }
 }
 
-async function updateUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function updateUserProfile(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
   try {
     const userId = getUserIdFromEvent(event);
     if (!userId) {
@@ -145,7 +160,10 @@ async function updateUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewa
     }
 
     // Validate request body with Zod
-    const validation = validateRequestBody(event.body, UpdateUserProfileRequestSchema);
+    const validation = validateRequestBody(
+      event.body,
+      UpdateUserProfileRequestSchema
+    );
     if (!validation.success) {
       return validation.response;
     }

@@ -12,11 +12,13 @@ disable_rollback = false
 parameter_overrides = [
     "Environment=prod"
 ]
+tags = "Environment=production project=agent-builder"
 
 [default.build]
 [default.build.parameters]
 cached = true
 parallel = true
+use_container = true
 
 [default.deploy]
 [default.deploy.parameters]
@@ -30,3 +32,5 @@ disable_rollback = false
 parameter_overrides = [
     "Environment=prod"
 ]
+tags = "Environment=production project=agent-builder"
+fail_on_empty_changeset = true

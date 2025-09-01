@@ -2,12 +2,30 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: "Agent Builder - Autonomous Software Factory Backend"
 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: agent-builder
+    Description: Agent Builder Backend Application
+  AWS::SAM::Sync:
+    RuntimeManifest:
+      nodejs20.x:
+        Operations:
+          Build:
+            - npm install
+            - npm run build
+          AssetsBuild:
+            - npm run build:layer
+          LocalDevelopment:
+            - npm run build:watch
+
 Globals:
   Function:
     Timeout: 300
     Runtime: nodejs20.x
     Architectures:
       - x86_64
+    Layers:
+      - !Ref CommonDependenciesLayer
     Environment:
       Variables:
         NODE_ENV: production
@@ -31,6 +49,17 @@ Parameters:
     AllowedValues: [dev, staging, prod]
 
 Resources:
+  # Lambda Layer for common dependencies
+  CommonDependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub agent-builder-common-deps-${Environment}
+      Description: "Shared Node.js dependencies for Agent Builder"
+      ContentUri: layers/common-deps/
+      CompatibleRuntimes:
+        - nodejs20.x
+      RetentionPolicy: Delete
+
   # SQS Queue for Agent Task Processing
   AgentTaskQueue:
     Type: AWS::SQS::Queue
@@ -162,8 +191,8 @@ Resources:
   UsersFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/handlers/
-      Handler: users.handler
+      CodeUri: dist/handlers/users/
+      Handler: index.handler
       Events:
         GetUserProfile:
           Type: Api
@@ -196,8 +225,8 @@ Resources:
   ProjectsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/handlers/
-      Handler: projects.handler
+      CodeUri: dist/handlers/projects/
+      Handler: index.handler
       AutoPublishAlias: live
       DeploymentPreference:
         Type: Canary10Percent5Minutes
@@ -247,8 +276,8 @@ Resources:
   OrchestratorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/handlers/
-      Handler: orchestrator.handler
+      CodeUri: dist/handlers/orchestrator/
+      Handler: index.handler
       Events:
         StartOrchestration:
           Type: Api
@@ -268,8 +297,8 @@ Resources:
   AgentWorkerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/handlers/
-      Handler: agentWorker.handler
+      CodeUri: dist/handlers/agentWorker/
+      Handler: index.handler
       Timeout: 900 # 15 minutes for agent processing
       Events:
         SQSEvent:
@@ -306,8 +335,8 @@ Resources:
   ResumeExecutionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/handlers/
-      Handler: resumeExecutionHandler.handler
+      CodeUri: dist/handlers/resumeExecutionHandler/
+      Handler: index.handler
       Events:
         ResumeExecution:
           Type: Api
@@ -331,8 +360,8 @@ Resources:
   TasksFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/handlers/
-      Handler: tasks.handler
+      CodeUri: dist/handlers/tasks/
+      Handler: index.handler
       Events:
         GetProjectTasks:
           Type: Api
@@ -355,8 +384,8 @@ Resources:
   ArtifactsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/handlers/
-      Handler: artifacts.handler
+      CodeUri: dist/handlers/artifacts/
+      Handler: index.handler
       Events:
         GetProjectArtifacts:
           Type: Api

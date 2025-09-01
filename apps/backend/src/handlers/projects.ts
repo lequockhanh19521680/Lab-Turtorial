@@ -7,11 +7,14 @@ import {
   parseJSON,
 } from "../utils/lambda.js";
 import { z } from "zod";
-import type {
+import {
+  ProjectService,
+  UserService,
+  TaskService,
   ProjectService as ProjectServiceType,
   UserService as UserServiceType,
   TaskService as TaskServiceType,
-} from "@lab-tutorial/infrastructure";
+} from "../infrastructure/index.js";
 
 interface Services {
   ProjectService?: ProjectServiceType;
@@ -37,9 +40,6 @@ let services: Services = {};
 
 const initializeServices = async () => {
   if (!services.ProjectService) {
-    const { ProjectService, UserService, TaskService } = await import(
-      "@lab-tutorial/infrastructure"
-    );
     services.ProjectService = new ProjectService();
     services.UserService = new UserService();
     services.TaskService = new TaskService();

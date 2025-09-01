@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { APIGatewayProxyResult } from 'aws-lambda';
-import { createErrorResponse } from './lambda';
+import { z } from "zod";
+import { APIGatewayProxyResult } from "aws-lambda";
+import { createErrorResponse } from "./lambda.js";
 
 /**
  * Validates request body using Zod schema
@@ -9,49 +9,51 @@ import { createErrorResponse } from './lambda';
 export function validateRequestBody<T>(
   body: string | null,
   schema: z.ZodSchema<T>
-): { success: true; data: T } | { success: false; response: APIGatewayProxyResult } {
+):
+  | { success: true; data: T }
+  | { success: false; response: APIGatewayProxyResult } {
   try {
     if (!body) {
       return {
         success: false,
-        response: createErrorResponse(400, 'Request body is required')
+        response: createErrorResponse(400, "Request body is required"),
       };
     }
 
     const parsedBody = JSON.parse(body);
     const validatedData = schema.parse(parsedBody);
-    
+
     return {
       success: true,
-      data: validatedData
+      data: validatedData,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
       const validationErrors = error.issues.map((err: z.ZodIssue) => ({
-        field: err.path.join('.'),
+        field: err.path.join("."),
         message: err.message,
-        received: 'received' in err ? err.received : undefined
+        received: "received" in err ? err.received : undefined,
       }));
-      
+
       return {
         success: false,
-        response: createErrorResponse(400, 'Validation failed', {
+        response: createErrorResponse(400, "Validation failed", {
           errors: validationErrors,
-          details: 'Please check the request body format and required fields'
-        })
+          details: "Please check the request body format and required fields",
+        }),
       };
     }
-    
+
     if (error instanceof SyntaxError) {
       return {
         success: false,
-        response: createErrorResponse(400, 'Invalid JSON format')
+        response: createErrorResponse(400, "Invalid JSON format"),
       };
     }
-    
+
     return {
       success: false,
-      response: createErrorResponse(400, 'Request validation failed')
+      response: createErrorResponse(400, "Request validation failed"),
     };
   }
 }
@@ -62,39 +64,41 @@ export function validateRequestBody<T>(
 export function validatePathParameters<T>(
   pathParameters: Record<string, string> | null,
   schema: z.ZodSchema<T>
-): { success: true; data: T } | { success: false; response: APIGatewayProxyResult } {
+):
+  | { success: true; data: T }
+  | { success: false; response: APIGatewayProxyResult } {
   try {
     if (!pathParameters) {
       return {
         success: false,
-        response: createErrorResponse(400, 'Path parameters are required')
+        response: createErrorResponse(400, "Path parameters are required"),
       };
     }
 
     const validatedData = schema.parse(pathParameters);
-    
+
     return {
       success: true,
-      data: validatedData
+      data: validatedData,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
       const validationErrors = error.issues.map((err: z.ZodIssue) => ({
-        field: err.path.join('.'),
-        message: err.message
+        field: err.path.join("."),
+        message: err.message,
       }));
-      
+
       return {
         success: false,
-        response: createErrorResponse(400, 'Invalid path parameters', {
-          errors: validationErrors
-        })
+        response: createErrorResponse(400, "Invalid path parameters", {
+          errors: validationErrors,
+        }),
       };
     }
-    
+
     return {
       success: false,
-      response: createErrorResponse(400, 'Path parameter validation failed')
+      response: createErrorResponse(400, "Path parameter validation failed"),
     };
   }
 }
@@ -105,32 +109,34 @@ export function validatePathParameters<T>(
 export function validateQueryParameters<T>(
   queryStringParameters: Record<string, string> | null,
   schema: z.ZodSchema<T>
-): { success: true; data: T } | { success: false; response: APIGatewayProxyResult } {
+):
+  | { success: true; data: T }
+  | { success: false; response: APIGatewayProxyResult } {
   try {
     const validatedData = schema.parse(queryStringParameters || {});
-    
+
     return {
       success: true,
-      data: validatedData
+      data: validatedData,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
       const validationErrors = error.issues.map((err: z.ZodIssue) => ({
-        field: err.path.join('.'),
-        message: err.message
+        field: err.path.join("."),
+        message: err.message,
       }));
-      
+
       return {
         success: false,
-        response: createErrorResponse(400, 'Invalid query parameters', {
-          errors: validationErrors
-        })
+        response: createErrorResponse(400, "Invalid query parameters", {
+          errors: validationErrors,
+        }),
       };
     }
-    
+
     return {
       success: false,
-      response: createErrorResponse(400, 'Query parameter validation failed')
+      response: createErrorResponse(400, "Query parameter validation failed"),
     };
   }
 }

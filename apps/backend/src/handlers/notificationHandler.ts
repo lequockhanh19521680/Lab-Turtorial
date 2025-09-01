@@ -1,4 +1,4 @@
-import { SNSEvent, SNSEventRecord } from "aws-lambda/trigger/sns";
+import type { SNSEvent, SNSEventRecord } from "aws-lambda";
 import {
   ApiGatewayManagementApiClient,
   PostToConnectionCommand,

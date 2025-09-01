@@ -8,7 +8,7 @@ import {
   QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
-import { User, Project, Task, Artifact } from "../models";
+import { User, Project, Task, Artifact } from "../models/index.js";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -32,7 +32,7 @@ export class DatabaseService {
   }): Promise<User> {
     const now = new Date().toISOString();
     const existingUser = await this.getUser(userData.userId);
-    
+
     const user: User = {
       ...userData,
       createdAt: existingUser?.createdAt || now,
@@ -63,7 +63,7 @@ export class DatabaseService {
 
   async updateUser(
     userId: string,
-    updates: Partial<Omit<User, 'userId' | 'createdAt'>>
+    updates: Partial<Omit<User, "userId" | "createdAt">>
   ): Promise<User> {
     const updateExpression = [];
     const expressionAttributeNames: Record<string, string> = {};
