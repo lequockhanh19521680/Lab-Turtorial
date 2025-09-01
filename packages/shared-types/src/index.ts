@@ -1,58 +1,71 @@
+import { z } from 'zod';
+
+// Core Entity Schemas
 // User Management Types
-export interface User {
-  userId: string;
-  email: string;
-  name?: string;
-  givenName?: string;
-  familyName?: string;
-  picture?: string;
-  provider: "google" | "cognito";
-  providerUserId: string;
-  createdAt: string;
-  updatedAt: string;
-  lastLoginAt?: string;
-}
+export const UserSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  email: z.string().email('Valid email is required'),
+  name: z.string().optional(),
+  givenName: z.string().optional(),
+  familyName: z.string().optional(),
+  picture: z.string().url().optional(),
+  provider: z.enum(['google', 'cognito']),
+  providerUserId: z.string().min(1, 'Provider user ID is required'),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  lastLoginAt: z.string().datetime().optional(),
+});
+
+export interface User extends z.infer<typeof UserSchema> {}
 
 // Project Management Types
-export interface Project {
-  id: string;
-  userId: string;
-  projectName: string;
-  requestPrompt: string;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
-  createdAt: string;
-  updatedAt: string;
-}
+export const ProjectStatusSchema = z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED']);
 
-export interface Task {
-  projectId: string;
-  taskId: string;
-  assignedAgent: string;
-  status: "TODO" | "IN_PROGRESS" | "DONE" | "FAILED" | "PENDING_APPROVAL";
-  dependencies: string[];
-  outputArtifactId?: string;
-  description?: string;
-  progress?: number;
-  startedAt?: string;
-  completedAt?: string;
-  errorMessage?: string;
-}
+export const ProjectSchema = z.object({
+  id: z.string().min(1, 'Project ID is required'),
+  userId: z.string().min(1, 'User ID is required'),
+  projectName: z.string().min(1, 'Project name is required').max(100, 'Project name too long'),
+  requestPrompt: z.string().min(10, 'Request prompt must be at least 10 characters').max(2000, 'Request prompt too long'),
+  status: ProjectStatusSchema,
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
 
-export interface Artifact {
-  projectId: string;
-  artifactId: string;
-  artifactType:
-    | "SRS_DOCUMENT"
-    | "SOURCE_CODE"
-    | "DEPLOYMENT_URL"
-    | "TEST_REPORT";
-  location: string;
-  version: string;
-  createdAt: string;
-  title?: string;
-  description?: string;
-  metadata?: Record<string, any>;
-}
+export interface Project extends z.infer<typeof ProjectSchema> {}
+
+export const TaskStatusSchema = z.enum(['TODO', 'IN_PROGRESS', 'DONE', 'FAILED', 'PENDING_APPROVAL']);
+
+export const TaskSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
+  assignedAgent: z.enum(['ProductManagerAgent', 'BackendEngineerAgent', 'FrontendEngineerAgent', 'DevOpsEngineerAgent']),
+  status: TaskStatusSchema,
+  dependencies: z.array(z.string()),
+  outputArtifactId: z.string().optional(),
+  description: z.string().optional(),
+  progress: z.number().min(0).max(100).optional(),
+  startedAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+  errorMessage: z.string().optional(),
+});
+
+export interface Task extends z.infer<typeof TaskSchema> {}
+
+export const ArtifactTypeSchema = z.enum(['SRS_DOCUMENT', 'SOURCE_CODE', 'DEPLOYMENT_URL', 'TEST_REPORT']);
+
+export const ArtifactSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+  artifactId: z.string().min(1, 'Artifact ID is required'),
+  artifactType: ArtifactTypeSchema,
+  location: z.string().min(1, 'Location is required'),
+  version: z.string().min(1, 'Version is required'),
+  createdAt: z.string().datetime(),
+  title: z.string().max(200, 'Title too long').optional(),
+  description: z.string().max(1000, 'Description too long').optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export interface Artifact extends z.infer<typeof ArtifactSchema> {}
 
 // Agent System Types
 export interface AgentExecutionContext {
@@ -71,37 +84,62 @@ export interface AgentResponse {
   metadata?: Record<string, any>;
 }
 
-// API Request/Response Types
-export interface CreateProjectRequest {
-  projectName: string;
-  requestPrompt: string;
-}
+// API Request/Response Types with Zod Schemas
+export const CreateProjectRequestSchema = z.object({
+  projectName: z.string().min(1, 'Project name is required').max(100, 'Project name too long').trim(),
+  requestPrompt: z.string().min(10, 'Request prompt must be at least 10 characters').max(2000, 'Request prompt too long').trim(),
+});
 
-export interface UpdateProjectRequest {
-  projectName?: string;
-  status?: Project["status"];
-}
+export const UpdateProjectRequestSchema = z.object({
+  projectName: z.string().min(1, 'Project name is required').max(100, 'Project name too long').trim().optional(),
+  status: ProjectStatusSchema.optional(),
+});
 
-export interface CreateTaskRequest {
-  assignedAgent: string;
-  description?: string;
-  dependencies?: string[];
-}
+export const CreateTaskRequestSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+  assignedAgent: z.enum(['ProductManagerAgent', 'BackendEngineerAgent', 'FrontendEngineerAgent', 'DevOpsEngineerAgent']),
+  description: z.string().max(500, 'Description too long').optional(),
+  dependencies: z.array(z.string()).default([]),
+  status: TaskStatusSchema.default('TODO'),
+});
 
-export interface UpdateTaskRequest {
-  status?: Task["status"];
-  progress?: number;
-  errorMessage?: string;
-}
+export const UpdateTaskRequestSchema = z.object({
+  status: TaskStatusSchema.optional(),
+  progress: z.number().min(0).max(100).optional(),
+  errorMessage: z.string().max(1000, 'Error message too long').optional(),
+  startedAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+});
 
-export interface CreateArtifactRequest {
-  artifactType: Artifact["artifactType"];
-  location: string;
-  version: string;
-  title?: string;
-  description?: string;
-  metadata?: Record<string, any>;
-}
+export const CreateArtifactRequestSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+  artifactType: ArtifactTypeSchema,
+  location: z.string().min(1, 'Location is required'),
+  version: z.string().min(1, 'Version is required'),
+  title: z.string().max(200, 'Title too long').optional(),
+  description: z.string().max(1000, 'Description too long').optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const StartOrchestrationRequestSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+});
+
+export const UpdateUserProfileRequestSchema = z.object({
+  name: z.string().max(100, 'Name too long').optional(),
+  givenName: z.string().max(50, 'Given name too long').optional(),
+  familyName: z.string().max(50, 'Family name too long').optional(),
+  picture: z.string().url('Invalid picture URL').optional(),
+});
+
+// Type inference from Zod schemas
+export interface CreateProjectRequest extends z.infer<typeof CreateProjectRequestSchema> {}
+export interface UpdateProjectRequest extends z.infer<typeof UpdateProjectRequestSchema> {}
+export interface CreateTaskRequest extends z.infer<typeof CreateTaskRequestSchema> {}
+export interface UpdateTaskRequest extends z.infer<typeof UpdateTaskRequestSchema> {}
+export interface CreateArtifactRequest extends z.infer<typeof CreateArtifactRequestSchema> {}
+export interface StartOrchestrationRequest extends z.infer<typeof StartOrchestrationRequestSchema> {}
+export interface UpdateUserProfileRequest extends z.infer<typeof UpdateUserProfileRequestSchema> {}
 
 // API Response Wrappers
 export interface ApiSuccessResponse<T = any> {

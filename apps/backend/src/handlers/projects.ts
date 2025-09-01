@@ -2,13 +2,20 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { ProjectService } from "../services/ProjectService";
 import { UserService } from "../services/UserService";
 import { TaskService } from "../services/TaskService";
+import { validateRequestBody } from "../utils/validation";
 import {
   createSuccessResponse,
   createErrorResponse,
   getUserIdFromEvent,
-  validateRequired,
   parseJSON,
 } from "../utils/lambda";
+import { z } from 'zod';
+
+// Local schemas for validation
+const CreateProjectRequestSchema = z.object({
+  projectName: z.string().min(1, 'Project name is required').max(100, 'Project name too long').trim(),
+  requestPrompt: z.string().min(10, 'Request prompt must be at least 10 characters').max(2000, 'Request prompt too long').trim(),
+});
 
 const projectService = new ProjectService();
 const userService = new UserService();
@@ -91,14 +98,19 @@ const createProject = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const userId = getUserIdFromEvent(event);
-    const body = parseJSON(event.body || "{}");
-
-    validateRequired(body, ["projectName", "requestPrompt"]);
+    
+    // Validate request body with Zod
+    const validation = validateRequestBody(event.body, CreateProjectRequestSchema);
+    if (!validation.success) {
+      return validation.response;
+    }
+    
+    const { projectName, requestPrompt } = validation.data;
 
     const project = await projectService.createProject(
       userId,
-      body.projectName,
-      body.requestPrompt
+      projectName,
+      requestPrompt
     );
 
     // Create initial tasks for the project

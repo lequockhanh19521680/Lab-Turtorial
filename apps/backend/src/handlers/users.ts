@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { UserService } from "../services/UserService";
+import { validateRequestBody } from "../utils/validation";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -7,6 +8,15 @@ import {
   parseJSON,
 } from "../utils/lambda";
 import jwt from "jsonwebtoken";
+import { z } from 'zod';
+
+// Local schema for user profile updates
+const UpdateUserProfileRequestSchema = z.object({
+  name: z.string().max(100, 'Name too long').optional(),
+  givenName: z.string().max(50, 'Given name too long').optional(),
+  familyName: z.string().max(50, 'Family name too long').optional(),
+  picture: z.string().url('Invalid picture URL').optional(),
+});
 
 const userService = new UserService();
 
@@ -134,24 +144,13 @@ async function updateUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewa
       return createErrorResponse(401, "Unauthorized");
     }
 
-    if (!event.body) {
-      return createErrorResponse(400, "Request body is required");
+    // Validate request body with Zod
+    const validation = validateRequestBody(event.body, UpdateUserProfileRequestSchema);
+    if (!validation.success) {
+      return validation.response;
     }
 
-    const body = parseJSON(event.body);
-    if (!body) {
-      return createErrorResponse(400, "Request body is required");
-    }
-
-    // Only allow updating certain fields
-    const allowedFields = ['name', 'givenName', 'familyName', 'picture'];
-    const updates: any = {};
-    
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updates[field] = body[field];
-      }
-    }
+    const updates = validation.data;
 
     if (Object.keys(updates).length === 0) {
       return createErrorResponse(400, "No valid fields to update");
