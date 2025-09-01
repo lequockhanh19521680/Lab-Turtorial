@@ -5,7 +5,7 @@ Description: "Agent Builder - Autonomous Software Factory Backend"
 Globals:
   Function:
     Timeout: 300
-    Runtime: nodejs18.x
+    Runtime: nodejs20.x
     MemorySize: 1024
     Environment:
       Variables:
@@ -16,23 +16,33 @@ Globals:
         ARTIFACTS_BUCKET: !Ref ArtifactsBucket
         AGENT_TASK_QUEUE_URL: !Ref AgentTaskQueue
         PROJECT_NOTIFICATION_TOPIC_ARN: !Ref ProjectNotificationTopic
-        WEBSOCKET_API_ENDPOINT: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+        WEBSOCKET_API_ENDPOINT: !Sub ${WebSocketApi.ApiId}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
         CONNECTIONS_TABLE: !Ref ConnectionsTable
-        # Secrets are now fetched from SSM at runtime
+        GOOGLE_CLIENT_ID_PARAM: !Sub /agent-builder/${Environment}/google-oauth-client-id
+        GOOGLE_CLIENT_SECRET_PARAM: !Sub /agent-builder/${Environment}/google-oauth-client-secret
+        OPENAI_API_KEY_PARAM: !Sub /agent-builder/${Environment}/openai-api-key
 
 Parameters:
   Environment:
     Type: String
     Default: dev
     AllowedValues: [dev, staging, prod]
+  GoogleClientId:
+    Type: String
+    NoEcho: true
+    Description: Google OAuth Client ID
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true
+    Description: Google OAuth Client Secret
 
 Resources:
   # SQS Queue for Agent Task Processing
   AgentTaskQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub "agent-builder-task-queue-${Environment}"
-      VisibilityTimeoutSeconds: 900 # 15 minutes for long-running agent tasks
+      QueueName: !Sub agent-builder-task-queue-${Environment}-${AWS::AccountId}
+      VisibilityTimeout: 900 # 15 minutes for long-running agent tasks
       MessageRetentionPeriod: 1209600 # 14 days
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt AgentTaskDLQ.Arn
@@ -42,14 +52,14 @@ Resources:
   AgentTaskDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub "agent-builder-task-dlq-${Environment}"
+      QueueName: !Sub agent-builder-task-dlq-${Environment}-${AWS::AccountId}
       MessageRetentionPeriod: 1209600 # 14 days
 
   # SNS Topic for real-time notifications
   ProjectNotificationTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub "agent-builder-notifications-${Environment}"
+      TopicName: !Sub agent-builder-notifications-${Environment}
       DisplayName: "Agent Builder Project Notifications"
   # API Gateway
   AgentBuilderApi:
@@ -70,7 +80,7 @@ Resources:
   WebSocketApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: !Sub "agent-builder-websocket-${Environment}"
+      Name: !Sub agent-builder-websocket-${Environment}
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: $request.body.action
 
@@ -118,7 +128,7 @@ Resources:
       ApiId: !Ref WebSocketApi
       Description: Connect Integration
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations"
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations
 
   DisconnectInteg:
     Type: AWS::ApiGatewayV2::Integration
@@ -126,7 +136,7 @@ Resources:
       ApiId: !Ref WebSocketApi
       Description: Disconnect Integration
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations"
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations
 
   DefaultInteg:
     Type: AWS::ApiGatewayV2::Integration
@@ -134,7 +144,7 @@ Resources:
       ApiId: !Ref WebSocketApi
       Description: Default Integration
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnMessageFunction.Arn}/invocations"
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnMessageFunction.Arn}/invocations
 
   # WebSocket Deployment
   Deployment:
@@ -150,7 +160,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
       StageName: !Ref Environment
-      Description: !Sub "${Environment} Stage"
+      Description: !Sub ${Environment}-Stage
       DeploymentId: !Ref Deployment
       ApiId: !Ref WebSocketApi
 
@@ -335,7 +345,7 @@ Resources:
   ProjectsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "agent-builder-projects-${Environment}"
+      TableName: !Sub agent-builder-projects-${Environment}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: projectId
@@ -356,7 +366,7 @@ Resources:
   TasksTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "agent-builder-tasks-${Environment}"
+      TableName: !Sub agent-builder-tasks-${Environment}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: projectId
@@ -372,7 +382,7 @@ Resources:
   ArtifactsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "agent-builder-artifacts-${Environment}"
+      TableName: !Sub agent-builder-artifacts-${Environment}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: projectId
@@ -389,7 +399,7 @@ Resources:
   ConnectionsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "agent-builder-connections-${Environment}"
+      TableName: !Sub agent-builder-connections-${Environment}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: connectionId
@@ -414,7 +424,7 @@ Resources:
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "agent-builder-artifacts-${Environment}-${AWS::AccountId}"
+      BucketName: !Sub ${Environment}-agent-builder-artifacts-${AWS::AccountId}-${AWS::Region}
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ["*"]
@@ -425,7 +435,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: !Sub "agent-builder-users-${Environment}"
+      UserPoolName: !Sub agent-builder-users-${Environment}
       UsernameAttributes:
         - email
       AutoVerifiedAttributes:
@@ -453,24 +463,26 @@ Resources:
 
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
+    DependsOn: GoogleIdentityProvider
     Properties:
       UserPoolId: !Ref UserPool
-      ClientName: !Sub "agent-builder-client-${Environment}"
+      ClientName: !Sub agent-builder-client-${Environment}
       GenerateSecret: false
       ExplicitAuthFlows:
-        - ADMIN_NO_SRP_AUTH
-        - USER_PASSWORD_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
       SupportedIdentityProviders:
         - COGNITO
         - Google
       CallbackURLs:
-        - !Sub 'https://${Environment === "prod" ? "app" : Environment}.agent-builder.app/auth/callback'
-        - "http://localhost:3000/auth/callback"
+        - !Sub https://${Environment}-agent-builder.app/auth/callback
+        - http://localhost:3000/auth/callback
       LogoutURLs:
-        - !Sub 'https://${Environment === "prod" ? "app" : Environment}.agent-builder.app/auth/logout'
-        - "http://localhost:3000/auth/logout"
+        - !Sub https://${Environment}-agent-builder.app/auth/logout
+        - http://localhost:3000/auth/logout
       AllowedOAuthFlows:
         - code
         - implicit
@@ -483,13 +495,14 @@ Resources:
   # Google Identity Provider (requires manual setup of Google OAuth credentials)
   GoogleIdentityProvider:
     Type: AWS::Cognito::UserPoolIdentityProvider
+    DependsOn: UserPool
     Properties:
       UserPoolId: !Ref UserPool
       ProviderName: Google
       ProviderType: Google
       ProviderDetails:
-        client_id: !Sub "{{resolve:ssm:/agent-builder/${Environment}/google-oauth-client-id:1}}"
-        client_secret: !Sub "{{resolve:ssm:/agent-builder/${Environment}/google-oauth-client-secret:1}}"
+        client_id: !Ref GoogleClientId
+        client_secret: !Ref GoogleClientSecret
         authorize_scopes: email openid profile
       AttributeMapping:
         email: email
@@ -500,59 +513,67 @@ Resources:
   # User Pool Domain for OAuth flows
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
+    DependsOn: UserPool
     Properties:
       UserPoolId: !Ref UserPool
-      Domain: !Sub "agent-builder-${Environment}-${AWS::AccountId}"
+      Domain: !Sub ${Environment}-agent-builder-${AWS::AccountId}
 
   # Step Functions for Agent Workflow
   AgentWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub "agent-builder-workflow-${Environment}"
+      StateMachineName: !Sub agent-builder-workflow-${Environment}
       RoleArn: !GetAtt StepFunctionsRole.Arn
-      DefinitionString: !Sub |
-        {
-          "Comment": "Agent Builder Workflow",
-          "StartAt": "ProductManagerAgent",
-          "States": {
-            "ProductManagerAgent": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "${ProductManagerFunction}",
-                "Payload.$": "$"
+      DefinitionString: !Sub
+        - |
+          {
+            "Comment": "Agent Builder Workflow",
+            "StartAt": "ProductManagerAgent",
+            "States": {
+              "ProductManagerAgent": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters": {
+                  "FunctionName": "${PMFunction}",
+                  "Payload.$": "$$"
+                },
+                "Next": "BackendEngineerAgent"
               },
-              "Next": "BackendEngineerAgent"
-            },
-            "BackendEngineerAgent": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "${BackendEngineerFunction}",
-                "Payload.$": "$"
+              "BackendEngineerAgent": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters": {
+                  "FunctionName": "${BEFunction}",
+                  "Payload.$": "$$"
+                },
+                "Next": "FrontendEngineerAgent"
               },
-              "Next": "FrontendEngineerAgent"
-            },
-            "FrontendEngineerAgent": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "${FrontendEngineerFunction}",
-                "Payload.$": "$"
+              "FrontendEngineerAgent": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters": {
+                  "FunctionName": "${FEFunction}",
+                  "Payload.$": "$$"
+                },
+                "Next": "DevOpsEngineerAgent"
               },
-              "Next": "DevOpsEngineerAgent"
-            },
-            "DevOpsEngineerAgent": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "${DevOpsEngineerFunction}",
-                "Payload.$": "$"
-              },
-              "End": true
+              "DevOpsEngineerAgent": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters": {
+                  "FunctionName": "${DEFunction}",
+                  "Payload.$": "$$"
+                },
+                "End": true
+              }
             }
           }
-        }
+        - {
+            PMFunction: !GetAtt ProductManagerFunction.Arn,
+            BEFunction: !GetAtt BackendEngineerFunction.Arn,
+            FEFunction: !GetAtt FrontendEngineerFunction.Arn,
+            DEFunction: !GetAtt DevOpsEngineerFunction.Arn,
+          }
 
   # AI Agent Functions
   ProductManagerFunction:
@@ -577,7 +598,7 @@ Resources:
               Action:
                 - ssm:GetParameter
                 - ssm:GetParameters
-              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*"
+              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*
 
   BackendEngineerFunction:
     Type: AWS::Serverless::Function
@@ -601,7 +622,7 @@ Resources:
               Action:
                 - ssm:GetParameter
                 - ssm:GetParameters
-              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*"
+              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*
 
   FrontendEngineerFunction:
     Type: AWS::Serverless::Function
@@ -625,7 +646,7 @@ Resources:
               Action:
                 - ssm:GetParameter
                 - ssm:GetParameters
-              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*"
+              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder-${Environment}/*
 
   DevOpsEngineerFunction:
     Type: AWS::Serverless::Function
@@ -649,7 +670,7 @@ Resources:
               Action:
                 - ssm:GetParameter
                 - ssm:GetParameters
-              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*"
+              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*
 
   # WebSocket Lambda Functions
   OnConnectFunction:
@@ -697,7 +718,7 @@ Resources:
             - Effect: Allow
               Action:
                 - execute-api:ManageConnections
-              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*"
+              Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi.ApiId}/*
 
   # Lambda Permissions for WebSocket API
   OnConnectPermission:
@@ -756,7 +777,7 @@ Resources:
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "agent-builder-frontend-${Environment}-${AWS::AccountId}"
+      BucketName: !Sub ${Environment}-agent-builder-frontend-${AWS::AccountId}-${AWS::Region}
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -781,7 +802,7 @@ Resources:
             Effect: Allow
             Principal: "*"
             Action: s3:GetObject
-            Resource: !Sub "${FrontendBucket}/*"
+            Resource: !Sub ${FrontendBucket.Arn}/*
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -796,7 +817,7 @@ Resources:
               OriginProtocolPolicy: http-only
         Enabled: true
         DefaultRootObject: index.html
-        Comment: !Sub "Agent Builder Frontend - ${Environment}"
+        Comment: !Sub Agent-Builder-Frontend-${Environment}
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           ViewerProtocolPolicy: redirect-to-https
@@ -815,48 +836,48 @@ Resources:
 Outputs:
   ApiGatewayEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${AgentBuilderApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+    Value: !Sub https://${AgentBuilderApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
     Export:
-      Name: !Sub "${AWS::StackName}-ApiEndpoint"
+      Name: !Sub ${AWS::StackName}-ApiEndpoint
 
   UserPoolId:
     Description: "Cognito User Pool ID"
     Value: !Ref UserPool
     Export:
-      Name: !Sub "${AWS::StackName}-UserPoolId"
+      Name: !Sub ${AWS::StackName}-UserPoolId
 
   UserPoolClientId:
     Description: "Cognito User Pool Client ID"
     Value: !Ref UserPoolClient
     Export:
-      Name: !Sub "${AWS::StackName}-UserPoolClientId"
+      Name: !Sub ${AWS::StackName}-UserPoolClientId
 
   WebSocketApiEndpoint:
     Description: "WebSocket API endpoint URL"
-    Value: !Sub "wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+    Value: !Sub wss://${WebSocketApi.ApiId}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
     Export:
-      Name: !Sub "${AWS::StackName}-WebSocketEndpoint"
+      Name: !Sub ${AWS::StackName}-WebSocketEndpoint
 
   UserPoolDomain:
     Description: "Cognito User Pool Domain"
     Value: !Ref UserPoolDomain
     Export:
-      Name: !Sub "${AWS::StackName}-UserPoolDomain"
+      Name: !Sub ${AWS::StackName}-UserPoolDomain
 
   FrontendBucketName:
     Description: "Frontend S3 bucket name"
     Value: !Ref FrontendBucket
     Export:
-      Name: !Sub "${AWS::StackName}-FrontendBucket"
+      Name: !Sub ${AWS::StackName}-FrontendBucket
 
   CloudFrontDistributionId:
     Description: "CloudFront distribution ID"
     Value: !Ref CloudFrontDistribution
     Export:
-      Name: !Sub "${AWS::StackName}-CloudFrontDistributionId"
+      Name: !Sub ${AWS::StackName}-CloudFrontDistributionId
 
   CloudFrontUrl:
     Description: "CloudFront distribution URL"
-    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
     Export:
-      Name: !Sub "${AWS::StackName}-CloudFrontUrl"
+      Name: !Sub ${AWS::StackName}-CloudFrontUrl
