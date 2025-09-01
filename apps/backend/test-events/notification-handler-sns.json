@@ -1,0 +1,16 @@
+{
+  "Records": [
+    {
+      "Sns": {
+        "Message": "{\"projectId\": \"test-project-123\", \"type\": \"task_update\", \"data\": {\"taskId\": \"test-task-123\", \"status\": \"DONE\"}, \"timestamp\": \"2024-01-01T00:00:00.000Z\"}",
+        "MessageId": "test-message-id",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:test-topic",
+        "Subject": "Agent Builder - task_update for project test-project-123",
+        "Timestamp": "2024-01-01T00:00:00.000Z"
+      },
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:test-topic:test-sub"
+    }
+  ]
+}

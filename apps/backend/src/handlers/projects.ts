@@ -1,14 +1,25 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DatabaseService } from "../utils/database";
+import { ProjectService } from "../services/ProjectService";
+import { UserService } from "../services/UserService";
+import { TaskService } from "../services/TaskService";
+import { validateRequestBody } from "../utils/validation";
 import {
   createSuccessResponse,
   createErrorResponse,
   getUserIdFromEvent,
-  validateRequired,
   parseJSON,
 } from "../utils/lambda";
+import { z } from 'zod';
 
-const db = new DatabaseService();
+// Local schemas for validation
+const CreateProjectRequestSchema = z.object({
+  projectName: z.string().min(1, 'Project name is required').max(100, 'Project name too long').trim(),
+  requestPrompt: z.string().min(10, 'Request prompt must be at least 10 characters').max(2000, 'Request prompt too long').trim(),
+});
+
+const projectService = new ProjectService();
+const userService = new UserService();
+const taskService = new TaskService();
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -56,7 +67,7 @@ const getProjects = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const userId = getUserIdFromEvent(event);
-    const projects = await db.getUserProjects(userId);
+    const projects = await userService.getUserProjects(userId);
 
     return createSuccessResponse({ projects });
   } catch (error) {
@@ -69,7 +80,7 @@ const getProject = async (
   projectId: string
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const project = await db.getProject(projectId);
+    const project = await projectService.getProject(projectId);
 
     if (!project) {
       return createErrorResponse(404, "Project not found");
@@ -87,14 +98,19 @@ const createProject = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const userId = getUserIdFromEvent(event);
-    const body = parseJSON(event.body || "{}");
+    
+    // Validate request body with Zod
+    const validation = validateRequestBody(event.body, CreateProjectRequestSchema);
+    if (!validation.success) {
+      return validation.response;
+    }
+    
+    const { projectName, requestPrompt } = validation.data;
 
-    validateRequired(body, ["projectName", "requestPrompt"]);
-
-    const project = await db.createProject(
+    const project = await projectService.createProject(
       userId,
-      body.projectName,
-      body.requestPrompt
+      projectName,
+      requestPrompt
     );
 
     // Create initial tasks for the project
@@ -130,7 +146,7 @@ const createProject = async (
     ];
 
     for (const task of initialTasks) {
-      await db.createTask(task);
+      await taskService.createTask(task);
     }
 
     return createSuccessResponse({
@@ -151,7 +167,7 @@ const updateProject = async (
   try {
     const body = parseJSON(event.body || "{}");
 
-    const project = await db.updateProject(projectId, body);
+    const project = await projectService.updateProject(projectId, body);
 
     return createSuccessResponse({ project });
   } catch (error) {
@@ -164,7 +180,7 @@ const deleteProject = async (
   projectId: string
 ): Promise<APIGatewayProxyResult> => {
   try {
-    await db.deleteProject(projectId);
+    await projectService.deleteProject(projectId);
 
     return createSuccessResponse({ message: "Project deleted successfully" });
   } catch (error) {

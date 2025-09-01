@@ -1,12 +1,19 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import { DatabaseService } from "../utils/database";
+import { validateRequestBody } from "../utils/validation";
 import {
   createSuccessResponse,
   createErrorResponse,
   parseJSON,
   validateRequired,
 } from "../utils/lambda";
+import { z } from 'zod';
+
+// Local schema for orchestration requests
+const StartOrchestrationRequestSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+});
 
 const sqsClient = new SQSClient({});
 const db = new DatabaseService();
@@ -36,10 +43,13 @@ const startOrchestration = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const body = parseJSON(event.body || "{}");
-    validateRequired(body, ["projectId"]);
+    // Validate request body with Zod
+    const validation = validateRequestBody(event.body, StartOrchestrationRequestSchema);
+    if (!validation.success) {
+      return validation.response;
+    }
 
-    const projectId = body.projectId;
+    const { projectId } = validation.data;
 
     // Get the project details
     const project = await db.getProject(projectId);

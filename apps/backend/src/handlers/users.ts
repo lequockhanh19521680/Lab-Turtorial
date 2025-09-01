@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DatabaseService } from "../utils/database";
+import { UserService } from "../services/UserService";
+import { validateRequestBody } from "../utils/validation";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -7,8 +8,17 @@ import {
   parseJSON,
 } from "../utils/lambda";
 import jwt from "jsonwebtoken";
+import { z } from 'zod';
 
-const db = new DatabaseService();
+// Local schema for user profile updates
+const UpdateUserProfileRequestSchema = z.object({
+  name: z.string().max(100, 'Name too long').optional(),
+  givenName: z.string().max(50, 'Given name too long').optional(),
+  familyName: z.string().max(50, 'Family name too long').optional(),
+  picture: z.string().url('Invalid picture URL').optional(),
+});
+
+const userService = new UserService();
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -51,7 +61,7 @@ async function getUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return createErrorResponse(401, "Unauthorized");
     }
 
-    const user = await db.getUser(userId);
+    const user = await userService.getUser(userId);
     if (!user) {
       return createErrorResponse(404, "User not found");
     }
@@ -119,7 +129,7 @@ async function createOrUpdateUser(event: APIGatewayProxyEvent): Promise<APIGatew
       };
     }
 
-    const user = await db.createOrUpdateUser(userData);
+    const user = await userService.createOrUpdateUser(userData);
     return createSuccessResponse(user);
   } catch (error) {
     console.error("Error creating/updating user:", error);
@@ -134,30 +144,19 @@ async function updateUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewa
       return createErrorResponse(401, "Unauthorized");
     }
 
-    if (!event.body) {
-      return createErrorResponse(400, "Request body is required");
+    // Validate request body with Zod
+    const validation = validateRequestBody(event.body, UpdateUserProfileRequestSchema);
+    if (!validation.success) {
+      return validation.response;
     }
 
-    const body = parseJSON(event.body);
-    if (!body) {
-      return createErrorResponse(400, "Request body is required");
-    }
-
-    // Only allow updating certain fields
-    const allowedFields = ['name', 'givenName', 'familyName', 'picture'];
-    const updates: any = {};
-    
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updates[field] = body[field];
-      }
-    }
+    const updates = validation.data;
 
     if (Object.keys(updates).length === 0) {
       return createErrorResponse(400, "No valid fields to update");
     }
 
-    const updatedUser = await db.updateUser(userId, updates);
+    const updatedUser = await userService.updateUser(userId, updates);
     return createSuccessResponse(updatedUser);
   } catch (error) {
     console.error("Error updating user profile:", error);

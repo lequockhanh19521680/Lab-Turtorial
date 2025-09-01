@@ -1,0 +1,19 @@
+{
+  "httpMethod": "POST",
+  "path": "/projects",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer dummy-test-token"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-user-id-123",
+        "email": "test@example.com"
+      }
+    }
+  },
+  "body": "{\"projectName\": \"Test Blog Platform\", \"requestPrompt\": \"Create a simple blog platform with user authentication and post management\"}",
+  "pathParameters": null,
+  "queryStringParameters": null
+}
