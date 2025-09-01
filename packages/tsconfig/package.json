@@ -1,0 +1,24 @@
+{
+  "name": "@lab-tutorial/tsconfig",
+  "version": "1.0.0",
+  "description": "Shared TypeScript configuration for Lab Tutorial monorepo",
+  "main": "index.js",
+  "files": [
+    "base.json",
+    "react.json",
+    "node.json",
+    "library.json"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "typescript",
+    "tsconfig",
+    "configuration"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@lab-tutorial/eslint-config-custom",
+  "version": "1.0.0",
+  "description": "Shared ESLint configuration for Lab Tutorial monorepo",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "react.js",
+    "node.js",
+    "library.js"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "eslint",
+    "eslint-config",
+    "configuration"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.28.0",
+    "eslint-plugin-prettier": "^5.0.0"
+  },
+  "peerDependencies": {
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "@lab-tutorial/infrastructure",
+  "version": "1.0.0",
+  "description": "Lab Tutorial Infrastructure - AWS CDK stack definitions",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "cdk:diff": "npm run build && cdk diff",
+    "cdk:synth": "npm run build && cdk synth",
+    "cdk:deploy": "npm run build && cdk deploy",
+    "cdk:deploy:dev": "npm run build && cdk deploy --context environment=dev",
+    "cdk:deploy:prod": "npm run build && cdk deploy --context environment=prod",
+    "cdk:destroy": "cdk destroy",
+    "lint": "eslint lib src --ext .ts",
+    "clean": "rm -rf dist cdk.out"
+  },
+  "keywords": [
+    "aws",
+    "cdk",
+    "infrastructure",
+    "iac"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "aws-cdk-lib": "^2.213.0",
+    "constructs": "^10.4.2"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.1027.0",
+    "typescript": "^5.9.2"
+  }
+}
