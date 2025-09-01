@@ -1,283 +1,302 @@
-# Lab-Turtorial
-# Lab Tutorial - Professional Turborepo Monorepo
+# Lab Tutorial - Autonomous Software Factory
 
-A professional Turborepo monorepo with type-safe API contract that transforms natural language descriptions into fully functional web applications using AI agents.
+A professional serverless application that transforms natural language descriptions into fully functional web applications using AI agents with real-time collaboration features.
 
-## 🏗️ Monorepo Structure
+## 🏗️ System Architecture
+
+```
+Frontend (React/Vite)
+        ↓
+   CloudFront (CDN)
+        ↓
+   API Gateway (REST + WebSocket)
+        ↓
+   Lambda Functions (Handlers)
+        ↓
+   Business Logic (Services)
+        ↓
+   Data Access (Repositories)
+        ↓
+   DynamoDB + S3 + SQS + SNS
+```
+
+### Key Features
+
+- **AI-Powered Development**: Multi-agent system with Product Manager, Backend Engineer, Frontend Engineer, and DevOps Engineer agents
+- **Real-time Collaboration**: WebSocket-based live updates and project progress tracking
+- **Serverless Architecture**: Fully managed AWS infrastructure with automatic scaling
+- **Type-Safe Development**: End-to-end TypeScript with shared type definitions
+- **Modern Monorepo**: Turborepo for efficient builds and development workflows
+
+## 🚀 Tech Stack
+
+### Frontend
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite with HMR
+- **Styling**: Tailwind CSS
+- **State Management**: Redux Toolkit + React Query
+- **Authentication**: AWS Cognito with OAuth (Google)
+
+### Backend
+- **Infrastructure**: AWS SAM (Serverless Application Model)
+- **Runtime**: Node.js 20.x on AWS Lambda
+- **Database**: Amazon DynamoDB with Global Secondary Indexes
+- **Storage**: Amazon S3 for artifacts and deployments
+- **Messaging**: Amazon SQS for task queues + SNS for notifications
+- **Real-time**: API Gateway WebSocket for live updates
+
+### DevOps
+- **IaC**: AWS SAM templates for infrastructure as code
+- **CI/CD**: GitHub Actions for automated testing and deployment
+- **Code Quality**: ESLint, Prettier, Husky with conventional commits
+- **Monorepo**: Turborepo for build optimization and caching
+
+## 📁 Project Structure
 
 ```
 /
 ├── apps/
-│   ├── frontend/          # React/Vite application (@lab-tutorial/frontend)
-│   └── backend/           # AWS SAM serverless backend (@lab-tutorial/backend)
+│   ├── frontend/                 # React application
+│   │   ├── src/
+│   │   ├── public/
+│   │   └── package.json
+│   └── backend/                  # AWS SAM serverless backend
+│       ├── src/handlers/         # Lambda function handlers (HTTP layer)
+│       ├── src/agents/           # AI agent implementations
+│       ├── src/utils/            # Utility functions
+│       ├── template.yaml         # SAM infrastructure definition
+│       └── package.json
 ├── packages/
-│   ├── shared-types/      # Type-safe API contract (@lab-tutorial/shared-types)
-│   ├── eslint-config-custom/  # Shared ESLint configuration
-│   ├── tsconfig/          # Shared TypeScript configurations
-│   └── infrastructure/    # AWS CDK infrastructure (@lab-tutorial/infrastructure)
-├── docs/                  # Documentation files
-├── turbo.json             # Turborepo pipeline configuration
-└── package.json           # Root workspace configuration
+│   ├── infrastructure/           # Business logic layer
+│   │   ├── src/services/         # Business logic services
+│   │   ├── src/repositories/     # Data access layer
+│   │   ├── src/models/           # Domain models and types
+│   │   └── package.json
+│   ├── shared-types/             # Shared TypeScript definitions
+│   ├── eslint-config-custom/     # Shared ESLint configuration
+│   └── tsconfig/                 # Shared TypeScript configurations
+└── docs/                         # Documentation
 ```
 
-## 🚀 Quick Start
+### Architecture Layers
+
+**3-Layer Architecture (Strict Separation)**:
+1. **Handlers** (`apps/backend/src/handlers/`) - HTTP request/response handling only
+2. **Services** (`packages/infrastructure/src/services/`) - Business logic and orchestration  
+3. **Repositories** (`packages/infrastructure/src/repositories/`) - Data access layer
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- npm 8+
-- AWS CLI configured (for deployment)
-- AWS SAM CLI (for local development)
 
-### 1. Install Dependencies
+- **Node.js** 18+ and npm 8+
+- **AWS CLI** configured with appropriate permissions
+- **AWS SAM CLI** for local development and deployment
+- **Git** for version control
+
+### 1. Clone and Install
 
 ```bash
+# Clone the repository
+git clone https://github.com/lequockhanh19521680/Lab-Turtorial.git
+cd Lab-Turtorial
+
 # Install all dependencies
 npm install
-```
 
-### 2. Build All Packages
-
-```bash
-# Build all packages in correct dependency order
+# Build all packages
 npm run build
 ```
 
-### 3. Run Tests
-
-```bash
-# Run all test suites
-npm run test
-```
-
-### 4. Development
+### 2. Local Development
 
 ```bash
 # Start all applications in development mode
 npm run dev
+
+# Or run individual components
+cd apps/frontend && npm run dev    # Frontend on http://localhost:3000
+cd apps/backend && npm run sam:local  # Backend API on http://localhost:3001
 ```
 
-## 📦 Packages Overview
+### 3. Environment Setup
 
-### Applications (`apps/`)
-
-#### Frontend (`@lab-tutorial/frontend`)
-- **Technology**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS
-- **State Management**: Redux Toolkit + React Query
-- **Location**: `apps/frontend/`
-
-#### Backend (`@lab-tutorial/backend`)
-- **Technology**: AWS SAM + TypeScript + Node.js 20.x
-- **Database**: Amazon DynamoDB
-- **API**: AWS API Gateway + OpenAPI 3.0
-- **Location**: `apps/backend/`
-
-### Shared Packages (`packages/`)
-
-#### Shared Types (`@lab-tutorial/shared-types`)
-Type-safe API contract providing:
-- User management types
-- Project and task management types  
-- Agent system types
-- API request/response types
-- WebSocket message types
-- Authentication types
-
-#### ESLint Config (`@lab-tutorial/eslint-config-custom`)
-Shared ESLint configurations for:
-- Base TypeScript rules
-- React-specific rules
-- Node.js-specific rules
-
-#### TypeScript Config (`@lab-tutorial/tsconfig`)
-Shared TypeScript configurations for:
-- Base configuration
-- React applications
-- Node.js applications
-- Library packages
-
-#### Infrastructure (`@lab-tutorial/infrastructure`)
-- **Technology**: AWS CDK + TypeScript
-- **Purpose**: Infrastructure as Code definitions
-- **Location**: `packages/infrastructure/`
-
-## 🛠️ Development Commands
-
-### Root Level Commands
+Create environment files for your deployment:
 
 ```bash
-# Build all packages
-npm run build
+# Backend environment variables
+cp apps/backend/.env.example apps/backend/.env.local
 
-# Run all tests
-npm run test
-
-# Start all apps in development mode
-npm run dev
-
-# Lint all packages
-npm run lint
-
-# Type check all packages
-npm run type-check
-
-# Clean all build outputs
-npm run clean
-
-# Format all code
-npm run format
+# Configure AWS resources (optional for local development)
+aws ssm put-parameter --name "/agent-builder/dev/openai-api-key" --value "your-openai-key" --type "SecureString"
+aws ssm put-parameter --name "/agent-builder/dev/google-oauth-client-id" --value "your-google-client-id" --type "String"
+aws ssm put-parameter --name "/agent-builder/dev/google-oauth-client-secret" --value "your-google-secret" --type "SecureString"
 ```
-
-### Individual Package Commands
-
-```bash
-# Work with specific packages
-cd apps/frontend && npm run dev
-cd apps/backend && npm run test
-cd packages/shared-types && npm run build
-```
-
-## 🎯 Key Features
-
-### Type-Safe API Contract
-- Single source of truth for all type definitions
-- Shared between frontend and backend
-- Automatic type checking across packages
-- Export formats: CommonJS, ESM, and TypeScript definitions
-
-### Turborepo Pipeline
-- Optimized builds with dependency management
-- Intelligent caching for faster builds
-- Parallel execution where possible
-- Clear task dependencies
-
-### Shared Configurations
-- Consistent ESLint rules across all packages
-- Shared TypeScript configurations
-- Standardized build and development scripts
-
-### Independent Applications
-- Frontend and backend can be developed separately
-- Isolated deployment pipelines
-- Clear separation of concerns
-
-## 🧪 Testing Strategy
-
-### Backend Testing (`apps/backend`)
-- **Framework**: Jest + ts-jest
-- **Coverage**: 22 passing tests
-- **Types**: Unit tests and integration tests
-- **Location**: `apps/backend/src/__tests__/`
-
-### Frontend Testing (`apps/frontend`)
-- **Framework**: Jest + React Testing Library
-- **Setup**: Ready for component and integration tests
-- **Location**: `apps/frontend/src/__tests__/` (to be added)
-
-### Package Testing
-Each package can have its own test suite following the same patterns.
 
 ## 🚀 Deployment
 
-### Backend Deployment
+### Backend Deployment (AWS SAM)
+
 ```bash
 cd apps/backend
+
+# Build the SAM application
 npm run build
-npm run deploy
+sam build
+
+# Deploy to development environment
+sam deploy --guided --config-file samconfig.dev.toml
+
+# Or deploy to production
+sam deploy --config-file samconfig.prod.toml
 ```
 
 ### Frontend Deployment
+
 ```bash
 cd apps/frontend
+
+# Build for production
 npm run build
-# Deploy dist/ folder to your hosting provider
+
+# Deploy to S3 + CloudFront (configured in SAM template)
+aws s3 sync dist/ s3://your-frontend-bucket-name --delete
+aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*"
 ```
 
-### Infrastructure Deployment
+### Infrastructure Components
+
+The SAM template creates:
+- **API Gateway** (REST + WebSocket APIs)
+- **Lambda Functions** (for all handlers and AI agents)
+- **DynamoDB Tables** (Users, Projects, Tasks, Artifacts, Connections)
+- **S3 Buckets** (Frontend hosting + artifacts storage)
+- **CloudFront Distribution** (CDN for frontend)
+- **Cognito User Pool** (Authentication)
+- **SQS Queues** (Task processing)
+- **SNS Topics** (Real-time notifications)
+
+## 🧪 Development Workflow
+
+### Code Quality & Standards
+
 ```bash
-cd packages/infrastructure
-npm run cdk:deploy
+# Run all quality checks
+npm run lint           # ESLint across all packages
+npm run type-check     # TypeScript validation
+npm run test           # Jest test suites
+npm run format         # Prettier code formatting
 ```
 
-## 📈 Performance Optimizations
+### Git Workflow
 
-### Turborepo Caching
-- Builds are cached based on file changes
-- Only affected packages are rebuilt
-- Significant time savings in CI/CD
+Commits must follow conventional commit format (enforced by Husky + Commitlint):
 
-### Build Optimization
-- TypeScript project references
-- Incremental compilation
-- Tree shaking enabled
-- Code splitting configured
-
-## 🔧 Configuration
-
-### Adding New Packages
-
-1. Create package directory in `packages/` or `apps/`
-2. Add `package.json` with proper naming convention
-3. Configure TypeScript and ESLint
-4. Update root `package.json` workspaces if needed
-5. Add to `turbo.json` pipeline if needed
-
-### Workspace Dependencies
-
-Use workspace protocol for internal dependencies:
-```json
-{
-  "dependencies": {
-    "@lab-tutorial/shared-types": "workspace:*"
-  }
-}
+```bash
+# Examples of valid commit messages
+git commit -m "feat: add real-time project status updates"
+git commit -m "fix: resolve WebSocket connection issues"
+git commit -m "docs: update deployment instructions"
+git commit -m "refactor: consolidate service layer architecture"
 ```
 
-## 📚 Documentation
+### Turborepo Benefits
 
-- **[API Documentation](docs/README.md)** - Complete API specification
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Deployment instructions
-- **[Setup Guide](docs/SETUP.md)** - Development setup
-- **[Mock API Guide](docs/MOCK_API_GUIDE.md)** - Testing with mock data
+- **Intelligent Caching**: Only rebuilds changed packages
+- **Parallel Execution**: Runs tasks across packages simultaneously
+- **Dependency Management**: Respects build order automatically
+
+```bash
+# Build only changed packages
+npm run build
+
+# Run tests with caching
+npm run test
+
+# Clean all build outputs
+npm run clean
+```
+
+## 🤖 AI Agent System
+
+### Agent Types
+
+1. **Product Manager Agent** - Requirements analysis and SRS generation
+2. **Backend Engineer Agent** - API design and database schema creation
+3. **Frontend Engineer Agent** - UI/UX implementation
+4. **DevOps Engineer Agent** - Deployment and infrastructure setup
+
+### Agent Workflow
+
+```
+User Request → Orchestrator → Agent Queue (SQS) → Agent Processing → Results → WebSocket Updates
+```
+
+### Real-time Features
+
+- **Live Progress Tracking** - See agent work in real-time
+- **WebSocket Updates** - Instant notifications and status changes
+- **Task Dependencies** - Smart task ordering and execution
+- **Artifact Generation** - Downloadable code, documents, and deployments
+
+## 📊 Monitoring & Observability
+
+### Built-in AWS Monitoring
+
+- **CloudWatch Logs** - Centralized logging for all Lambda functions
+- **CloudWatch Metrics** - Performance monitoring and alerting
+- **X-Ray Tracing** - Distributed request tracing (optional)
+- **API Gateway Metrics** - Request/response analytics
+
+### Error Handling
+
+- **Dead Letter Queues** - Failed task recovery
+- **Retry Logic** - Automatic retry with exponential backoff
+- **Error Boundaries** - Graceful frontend error handling
+
+## 🔒 Security
+
+### Authentication & Authorization
+
+- **AWS Cognito** - User authentication and management
+- **JWT Tokens** - Secure API access
+- **OAuth Integration** - Google sign-in support
+- **API Gateway Authorizers** - Request validation
+
+### Data Security
+
+- **VPC** - Network isolation (optional)
+- **IAM Roles** - Least privilege access
+- **Parameter Store** - Secure configuration management
+- **HTTPS Only** - TLS encryption for all traffic
 
 ## 🤝 Contributing
 
+### Development Setup
+
 1. Fork the repository
-2. Create a feature branch
-3. Make changes in the appropriate package
-4. Run tests: `npm run test`
-5. Run linting: `npm run lint`
-6. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes following the project structure
+4. Ensure all tests pass: `npm run test`
+5. Verify code quality: `npm run lint`
+6. Commit with conventional format: `git commit -m "feat: add amazing feature"`
+7. Push and create a Pull Request
 
-### Development Guidelines
+### Code Standards
 
-- Use shared types from `@lab-tutorial/shared-types`
-- Follow ESLint configuration from `@lab-tutorial/eslint-config-custom`
-- Use appropriate TypeScript config from `@lab-tutorial/tsconfig`
-- Add tests for new functionality
-- Update documentation as needed
+- **TypeScript** - Strict mode enabled
+- **ESLint** - Consistent code style
+- **Prettier** - Automatic code formatting
+- **Conventional Commits** - Standardized commit messages
+- **Test Coverage** - Maintain existing coverage levels
 
-## 🏆 Benefits of This Architecture
+### Adding New Features
 
-### Scalability
-- Easy to add new applications or packages
-- Independent deployment and development
-- Clear separation of concerns
-
-### Developer Experience
-- Fast builds with intelligent caching
-- Consistent tooling across packages
-- Type safety across package boundaries
-
-### Maintainability
-- Single source of truth for types
-- Shared configurations reduce duplication
-- Clear dependency management
-
-### Performance
-- Turborepo's smart caching
-- Only rebuild what's changed
-- Parallel task execution
+1. **Services** - Add business logic in `packages/infrastructure/src/services/`
+2. **Handlers** - Create HTTP handlers in `apps/backend/src/handlers/`
+3. **Types** - Define shared types in `packages/shared-types/`
+4. **Tests** - Add tests alongside implementation
+5. **Documentation** - Update relevant documentation
 
 ## 📄 License
 
@@ -285,6 +304,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ using Turborepo**
+**Built with ❤️ using AWS Serverless + Turborepo**
 
-*Transforming ideas into applications through modern monorepo architecture*
+*Transforming ideas into applications through AI-powered development*

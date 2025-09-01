@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-commit hooks can be enabled when existing TS/lint issues are resolved
+# npm run type-check
