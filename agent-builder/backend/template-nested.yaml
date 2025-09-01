@@ -1,0 +1,307 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: "Agent Builder - Main Stack with Nested Stacks"
+
+Globals:
+  Function:
+    Timeout: 300
+    Runtime: nodejs20.x
+    MemorySize: 1024
+    Environment:
+      Variables:
+        NODE_ENV: production
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+Resources:
+  # Nested Stacks
+  DatabaseStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/database.yaml
+      Parameters:
+        Environment: !Ref Environment
+
+  InfrastructureStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/infrastructure.yaml
+      Parameters:
+        Environment: !Ref Environment
+
+  AuthStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/auth.yaml
+      Parameters:
+        Environment: !Ref Environment
+
+  # API Gateway with OpenAPI Specification
+  AgentBuilderApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept,Accept-Language,Accept-Encoding'"
+        AllowOrigin: "'*'"
+        MaxAge: "'86400'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt AuthStack.Outputs.UserPoolArn
+
+  # WebSocket API for real-time updates
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub agent-builder-websocket-${Environment}
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+
+  # Lambda Functions with Dynamic Environment Variables
+  UsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: users.handler
+      Environment:
+        Variables:
+          USERS_TABLE: !GetAtt DatabaseStack.Outputs.UsersTableName
+          GOOGLE_CLIENT_ID_PARAM: !Sub /agent-builder/${Environment}/google-oauth-client-id
+          GOOGLE_CLIENT_SECRET_PARAM: !Sub /agent-builder/${Environment}/google-oauth-client-secret
+      Events:
+        GetUserProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /users/profile
+            Method: get
+        CreateOrUpdateUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /users
+            Method: post
+        UpdateUserProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /users/profile
+            Method: patch
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !GetAtt DatabaseStack.Outputs.UsersTableName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*
+
+  ProjectsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: projects.handler
+      Environment:
+        Variables:
+          USERS_TABLE: !GetAtt DatabaseStack.Outputs.UsersTableName
+          PROJECTS_TABLE: !GetAtt DatabaseStack.Outputs.ProjectsTableName
+          TASKS_TABLE: !GetAtt DatabaseStack.Outputs.TasksTableName
+          ARTIFACTS_TABLE: !GetAtt DatabaseStack.Outputs.ArtifactsTableName
+          ARTIFACTS_BUCKET: !GetAtt InfrastructureStack.Outputs.ArtifactsBucketName
+          AGENT_TASK_QUEUE_URL: !GetAtt InfrastructureStack.Outputs.AgentTaskQueueUrl
+          PROJECT_NOTIFICATION_TOPIC_ARN: !GetAtt InfrastructureStack.Outputs.ProjectNotificationTopicArn
+          CONNECTIONS_TABLE: !GetAtt DatabaseStack.Outputs.ConnectionsTableName
+          WEBSOCKET_API_ENDPOINT: !Sub ${WebSocketApi.ApiId}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+          OPENAI_API_KEY_PARAM: !Sub /agent-builder/${Environment}/openai-api-key
+      Events:
+        GetProjects:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects
+            Method: get
+        CreateProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects
+            Method: post
+        GetProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}
+            Method: get
+        UpdateProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}
+            Method: patch
+        DeleteProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}
+            Method: delete
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !GetAtt DatabaseStack.Outputs.ProjectsTableName
+        - DynamoDBCrudPolicy:
+            TableName: !GetAtt DatabaseStack.Outputs.TasksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !GetAtt DatabaseStack.Outputs.ArtifactsTableName
+
+  TasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: tasks.handler
+      Environment:
+        Variables:
+          PROJECTS_TABLE: !GetAtt DatabaseStack.Outputs.ProjectsTableName
+          TASKS_TABLE: !GetAtt DatabaseStack.Outputs.TasksTableName
+      Events:
+        GetProjectTasks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}/tasks
+            Method: get
+        GetProjectStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}/status
+            Method: get
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !GetAtt DatabaseStack.Outputs.TasksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !GetAtt DatabaseStack.Outputs.ProjectsTableName
+
+  ArtifactsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: artifacts.handler
+      Environment:
+        Variables:
+          ARTIFACTS_TABLE: !GetAtt DatabaseStack.Outputs.ArtifactsTableName
+          ARTIFACTS_BUCKET: !GetAtt InfrastructureStack.Outputs.ArtifactsBucketName
+      Events:
+        GetProjectArtifacts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /projects/{id}/artifacts
+            Method: get
+        CreateArtifact:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /artifacts
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !GetAtt DatabaseStack.Outputs.ArtifactsTableName
+        - S3CrudPolicy:
+            BucketName: !GetAtt InfrastructureStack.Outputs.ArtifactsBucketName
+
+  # WebSocket Routes and Functions (simplified for now)
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      OperationName: ConnectRoute
+      Target: !Join
+        - "/"
+        - - "integrations"
+          - !Ref ConnectInteg
+
+  ConnectInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations
+
+  OnConnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: websocket.onConnect
+      Environment:
+        Variables:
+          CONNECTIONS_TABLE: !GetAtt DatabaseStack.Outputs.ConnectionsTableName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !GetAtt DatabaseStack.Outputs.ConnectionsTableName
+
+  # WebSocket Deployment
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - ConnectRoute
+    Properties:
+      ApiId: !Ref WebSocketApi
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: !Ref Environment
+      Description: !Sub ${Environment}-Stage
+      DeploymentId: !Ref Deployment
+      ApiId: !Ref WebSocketApi
+
+  # Lambda Permissions for WebSocket API
+  OnConnectPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - WebSocketApi
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref OnConnectFunction
+      Principal: apigateway.amazonaws.com
+
+Outputs:
+  ApiGatewayEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub https://${AgentBuilderApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub ${AWS::StackName}-ApiEndpoint
+
+  WebSocketApiEndpoint:
+    Description: "WebSocket API endpoint URL"
+    Value: !Sub wss://${WebSocketApi.ApiId}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub ${AWS::StackName}-WebSocketEndpoint
+
+  UserPoolId:
+    Description: "Cognito User Pool ID"
+    Value: !GetAtt AuthStack.Outputs.UserPoolId
+    Export:
+      Name: !Sub ${AWS::StackName}-UserPoolId
+
+  UserPoolClientId:
+    Description: "Cognito User Pool Client ID"
+    Value: !GetAtt AuthStack.Outputs.UserPoolClientId
+    Export:
+      Name: !Sub ${AWS::StackName}-UserPoolClientId
+
+  CloudFrontUrl:
+    Description: "CloudFront distribution URL"
+    Value: !GetAtt InfrastructureStack.Outputs.CloudFrontUrl
+    Export:
+      Name: !Sub ${AWS::StackName}-CloudFrontUrl

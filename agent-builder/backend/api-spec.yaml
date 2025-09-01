@@ -1,0 +1,633 @@
+openapi: 3.0.1
+info:
+  title: Agent Builder API
+  description: Autonomous Software Factory - AI-powered application development platform
+  version: 1.0.0
+  contact:
+    name: Agent Builder Team
+    email: support@agent-builder.app
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.agent-builder.app/dev
+    description: Development server
+  - url: https://api.agent-builder.app/prod
+    description: Production server
+
+security:
+  - CognitoAuth: []
+
+paths:
+  /users/profile:
+    get:
+      summary: Get user profile
+      description: Retrieve the authenticated user's profile information
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Update user profile
+      description: Update the authenticated user's profile information
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "John Doe"
+                givenName:
+                  type: string
+                  example: "John"
+                familyName:
+                  type: string
+                  example: "Doe"
+                picture:
+                  type: string
+                  format: uri
+                  example: "https://example.com/avatar.jpg"
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users:
+    post:
+      summary: Create or update user
+      description: Create a new user or update existing user (typically called after OAuth login)
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GoogleTokenRequest'
+                - $ref: '#/components/schemas/DirectUserRequest'
+      responses:
+        '200':
+          description: User created or updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /projects:
+    get:
+      summary: Get user projects
+      description: Retrieve all projects for the authenticated user
+      tags:
+        - Projects
+      responses:
+        '200':
+          description: Projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create new project
+      description: Create a new project with AI agent processing
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - projectName
+                - requestPrompt
+              properties:
+                projectName:
+                  type: string
+                  example: "E-commerce Platform"
+                requestPrompt:
+                  type: string
+                  example: "Create a modern e-commerce platform with user authentication, product catalog, shopping cart, and payment processing"
+      responses:
+        '201':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projectId:
+                    type: string
+                  status:
+                    type: string
+                    example: "created"
+                  message:
+                    type: string
+                    example: "Project created successfully"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects/{id}:
+    get:
+      summary: Get project details
+      description: Retrieve detailed information about a specific project
+      tags:
+        - Projects
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Update project
+      description: Update project details
+      tags:
+        - Projects
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectName:
+                  type: string
+                requestPrompt:
+                  type: string
+                status:
+                  type: string
+                  enum: [PENDING, IN_PROGRESS, COMPLETED, FAILED]
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete project
+      description: Delete a project and all associated data
+      tags:
+        - Projects
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '204':
+          description: Project deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{id}/tasks:
+    get:
+      summary: Get project tasks
+      description: Retrieve all tasks for a specific project
+      tags:
+        - Tasks
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{id}/status:
+    get:
+      summary: Get project status
+      description: Get the current status and progress of a project
+      tags:
+        - Projects
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [PENDING, IN_PROGRESS, COMPLETED, FAILED]
+                  progress:
+                    type: number
+                    minimum: 0
+                    maximum: 100
+                  currentTask:
+                    type: string
+                  tasksCompleted:
+                    type: integer
+                  totalTasks:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{id}/artifacts:
+    get:
+      summary: Get project artifacts
+      description: Retrieve all artifacts generated for a project
+      tags:
+        - Artifacts
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Artifacts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Artifact'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /artifacts:
+    post:
+      summary: Create artifact
+      description: Create a new artifact for a project
+      tags:
+        - Artifacts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - projectId
+                - artifactType
+                - location
+                - version
+              properties:
+                projectId:
+                  type: string
+                artifactType:
+                  type: string
+                  enum: [SRS_DOCUMENT, SOURCE_CODE, DEPLOYMENT_URL, TEST_REPORT]
+                location:
+                  type: string
+                version:
+                  type: string
+                title:
+                  type: string
+                description:
+                  type: string
+                metadata:
+                  type: object
+      responses:
+        '201':
+          description: Artifact created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    CognitoAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: AWS Cognito JWT token in the format "Bearer {token}"
+
+  parameters:
+    ProjectId:
+      name: id
+      in: path
+      required: true
+      description: Unique identifier for the project
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    User:
+      type: object
+      required:
+        - userId
+        - email
+      properties:
+        userId:
+          type: string
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+          description: User's email address
+        name:
+          type: string
+          description: User's full name
+        givenName:
+          type: string
+          description: User's first name
+        familyName:
+          type: string
+          description: User's last name
+        picture:
+          type: string
+          format: uri
+          description: URL to user's profile picture
+        provider:
+          type: string
+          enum: [google, cognito]
+          description: Authentication provider
+        providerUserId:
+          type: string
+          description: Provider-specific user ID
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        lastLoginAt:
+          type: string
+          format: date-time
+          description: Last login timestamp
+
+    GoogleTokenRequest:
+      type: object
+      required:
+        - idToken
+      properties:
+        idToken:
+          type: string
+          description: Google OAuth ID token
+
+    DirectUserRequest:
+      type: object
+      required:
+        - userId
+        - email
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        givenName:
+          type: string
+        familyName:
+          type: string
+        picture:
+          type: string
+          format: uri
+        provider:
+          type: string
+          enum: [google, cognito]
+          default: cognito
+        providerUserId:
+          type: string
+
+    Project:
+      type: object
+      required:
+        - id
+        - userId
+        - projectName
+        - requestPrompt
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique project identifier
+        userId:
+          type: string
+          description: Owner user ID
+        projectName:
+          type: string
+          description: Human-readable project name
+        requestPrompt:
+          type: string
+          description: Original user request/prompt
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, FAILED]
+          description: Current project status
+        createdAt:
+          type: string
+          format: date-time
+          description: Project creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    Task:
+      type: object
+      required:
+        - projectId
+        - taskId
+        - assignedAgent
+        - status
+      properties:
+        projectId:
+          type: string
+          description: Associated project ID
+        taskId:
+          type: string
+          description: Unique task identifier
+        assignedAgent:
+          type: string
+          description: AI agent responsible for this task
+        status:
+          type: string
+          enum: [TODO, IN_PROGRESS, DONE, FAILED, PENDING_APPROVAL]
+          description: Current task status
+        dependencies:
+          type: array
+          items:
+            type: string
+          description: List of task IDs this task depends on
+        outputArtifactId:
+          type: string
+          description: ID of the artifact produced by this task
+        description:
+          type: string
+          description: Task description
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Task completion percentage
+        startedAt:
+          type: string
+          format: date-time
+          description: Task start timestamp
+        completedAt:
+          type: string
+          format: date-time
+          description: Task completion timestamp
+        errorMessage:
+          type: string
+          description: Error message if task failed
+
+    Artifact:
+      type: object
+      required:
+        - projectId
+        - artifactId
+        - artifactType
+        - location
+        - version
+      properties:
+        projectId:
+          type: string
+          description: Associated project ID
+        artifactId:
+          type: string
+          description: Unique artifact identifier
+        artifactType:
+          type: string
+          enum: [SRS_DOCUMENT, SOURCE_CODE, DEPLOYMENT_URL, TEST_REPORT]
+          description: Type of artifact
+        location:
+          type: string
+          description: Storage location (S3 URL, etc.)
+        version:
+          type: string
+          description: Artifact version
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        title:
+          type: string
+          description: Human-readable title
+        description:
+          type: string
+          description: Artifact description
+        metadata:
+          type: object
+          description: Additional metadata
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "VALIDATION_ERROR"
+            message: "Missing required field: projectName"
+
+    Unauthorized:
+      description: Unauthorized - invalid or missing authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "UNAUTHORIZED"
+            message: "Authentication required"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "NOT_FOUND"
+            message: "Resource not found"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"

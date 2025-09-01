@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: "Agent Builder - Infrastructure Stack (Storage, Queues, Topics)"
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+Resources:
+  # SQS Queue for Agent Task Processing
+  AgentTaskQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub agent-builder-task-queue-${Environment}-${AWS::AccountId}
+      VisibilityTimeout: 900 # 15 minutes for long-running agent tasks
+      MessageRetentionPeriod: 1209600 # 14 days
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AgentTaskDLQ.Arn
+        maxReceiveCount: 3
+
+  # Dead Letter Queue for failed tasks
+  AgentTaskDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub agent-builder-task-dlq-${Environment}-${AWS::AccountId}
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  # SNS Topic for real-time notifications
+  ProjectNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub agent-builder-notifications-${Environment}
+      DisplayName: "Agent Builder Project Notifications"
+
+  # S3 Bucket for artifacts
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${Environment}-agent-builder-artifacts-${AWS::AccountId}-${AWS::Region}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ["*"]
+
+  # Frontend Hosting Resources
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${Environment}-agent-builder-frontend-${AWS::AccountId}-${AWS::Region}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, HEAD]
+            AllowedOrigins: ["*"]
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+        Enabled: true
+        DefaultRootObject: index.html
+        Comment: !Sub Agent-Builder-Frontend-${Environment}
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # CachingDisabled
+          ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # SecurityHeadersPolicy
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+Outputs:
+  AgentTaskQueueUrl:
+    Description: "URL of the Agent Task SQS Queue"
+    Value: !Ref AgentTaskQueue
+    Export:
+      Name: !Sub ${AWS::StackName}-AgentTaskQueueUrl
+
+  AgentTaskQueueArn:
+    Description: "ARN of the Agent Task SQS Queue"
+    Value: !GetAtt AgentTaskQueue.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-AgentTaskQueueArn
+
+  ProjectNotificationTopicArn:
+    Description: "ARN of the Project Notification SNS Topic"
+    Value: !Ref ProjectNotificationTopic
+    Export:
+      Name: !Sub ${AWS::StackName}-ProjectNotificationTopicArn
+
+  ArtifactsBucketName:
+    Description: "Name of the Artifacts S3 bucket"
+    Value: !Ref ArtifactsBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-ArtifactsBucket
+
+  FrontendBucketName:
+    Description: "Name of the Frontend S3 bucket"
+    Value: !Ref FrontendBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-FrontendBucket
+
+  CloudFrontDistributionId:
+    Description: "CloudFront distribution ID"
+    Value: !Ref CloudFrontDistribution
+    Export:
+      Name: !Sub ${AWS::StackName}-CloudFrontDistributionId
+
+  CloudFrontUrl:
+    Description: "CloudFront distribution URL"
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
+    Export:
+      Name: !Sub ${AWS::StackName}-CloudFrontUrl

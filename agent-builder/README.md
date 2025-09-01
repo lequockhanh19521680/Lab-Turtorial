@@ -23,10 +23,22 @@ Agent Builder transforms natural language descriptions into fully functional web
 - **Complete Stack Generation**: Frontend, backend, database, and deployment
 - **Professional Quality**: Production-ready code with best practices
 - **Instant Deployment**: Get a live URL for your application
+- **User Management**: Complete authentication system with Google OAuth
+- **Scalable Architecture**: Serverless AWS infrastructure that scales automatically
 
 ![Filled Project Form](https://github.com/user-attachments/assets/666a89ed-80ba-4621-8702-d55b4436c270)
 
 ## 🏗️ Architecture
+
+### Serverless Backend (AWS SAM)
+- **Nested Stacks**: Modular CloudFormation templates for easier management
+- **AWS Lambda**: Serverless compute with Node.js 20.x runtime
+- **Amazon DynamoDB**: NoSQL database with global secondary indexes
+- **API Gateway**: RESTful APIs with OpenAPI 3.0 specification
+- **AWS Cognito**: User authentication and authorization
+- **Step Functions**: AI agent orchestration workflow
+- **SQS + SNS**: Asynchronous messaging and notifications
+- **S3 + CloudFront**: Static asset hosting and CDN
 
 ### Frontend
 - **React 18** with TypeScript for type safety
@@ -34,13 +46,6 @@ Agent Builder transforms natural language descriptions into fully functional web
 - **Redux Toolkit** for state management
 - **React Router v6** for navigation
 - **React Query** for API state management
-
-### Backend
-- **AWS Lambda** for serverless compute
-- **Amazon DynamoDB** for scalable database
-- **API Gateway** for REST APIs
-- **AWS Cognito** for authentication
-- **Step Functions** for agent orchestration
 
 ### AI Agents
 - **Orchestrator Agent**: Coordinates the entire process
@@ -50,6 +55,21 @@ Agent Builder transforms natural language descriptions into fully functional web
 - **DevOps Engineer Agent**: Handles deployment and infrastructure
 
 ## 🛠️ Technology Stack
+
+### Backend
+```json
+{
+  "runtime": "Node.js 20.x",
+  "framework": "AWS SAM",
+  "database": "Amazon DynamoDB",
+  "api": "AWS API Gateway + OpenAPI 3.0",
+  "auth": "AWS Cognito",
+  "orchestration": "AWS Step Functions",
+  "messaging": "AWS SQS + SNS",
+  "storage": "Amazon S3",
+  "cdn": "Amazon CloudFront"
+}
+```
 
 ### Frontend
 ```json
@@ -63,136 +83,203 @@ Agent Builder transforms natural language descriptions into fully functional web
 }
 ```
 
-### Backend
-```json
-{
-  "runtime": "Node.js 18",
-  "framework": "AWS Lambda",
-  "database": "Amazon DynamoDB",
-  "api": "AWS API Gateway",
-  "auth": "AWS Cognito",
-  "orchestration": "AWS Step Functions",
-  "deployment": "AWS SAM"
-}
-```
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- AWS CLI configured
-- AWS SAM CLI (for backend deployment)
+- AWS CLI configured with appropriate permissions
+- AWS SAM CLI installed
 
-### Frontend Development
+### 1. Backend Deployment
+
+```bash
+cd agent-builder/backend
+
+# Install dependencies
+npm install
+
+# Set up SSM parameters (required for AI functionality)
+aws ssm put-parameter \
+  --name "/agent-builder/dev/openai-api-key" \
+  --value "your-openai-api-key" \
+  --type "SecureString"
+
+# Deploy to development
+./deploy.sh dev
+
+# Deploy to production
+./deploy.sh prod
+```
+
+### 2. Frontend Development
+
 ```bash
 cd agent-builder/frontend
+
+# Install dependencies
 npm install
+
+# Copy environment template
+cp .env.local.example .env.local
+
+# Update .env.local with API endpoint from deployment outputs
+# VITE_API_BASE_URL=https://your-api-id.execute-api.us-east-1.amazonaws.com/dev
+
+# Start development server
 npm run dev
-```
-
-### Backend Development
-```bash
-cd agent-builder/backend
-npm install
-npm run build
-sam local start-api
-```
-
-### Full Deployment
-```bash
-# Deploy backend
-cd agent-builder/backend
-sam build
-sam deploy --guided
-
-# Deploy frontend
-cd agent-builder/frontend
-npm run build
-aws s3 sync dist/ s3://your-bucket-name
 ```
 
 ## 📁 Project Structure
 
 ```
 agent-builder/
-├── frontend/                 # React frontend application
+├── backend/                  # AWS serverless backend
+│   ├── src/
+│   │   ├── handlers/        # Lambda function handlers
+│   │   ├── agents/          # AI agent implementations
+│   │   ├── models/          # Data models and types
+│   │   └── utils/           # Utility functions
+│   ├── stacks/              # Nested CloudFormation stacks
+│   │   ├── database.yaml    # DynamoDB tables
+│   │   ├── infrastructure.yaml # S3, SQS, SNS, CloudFront
+│   │   └── auth.yaml        # Cognito User Pool
+│   ├── template.yaml        # Main SAM template (monolith)
+│   ├── template-nested.yaml # Main SAM template (nested stacks)
+│   ├── api-spec.yaml        # OpenAPI 3.0 specification
+│   ├── samconfig.*.toml     # SAM deployment configurations
+│   └── deploy.sh            # Deployment script
+├── frontend/                # React frontend application
 │   ├── src/
 │   │   ├── components/      # Reusable UI components
 │   │   ├── pages/          # Application pages
 │   │   ├── services/       # API services
 │   │   ├── store/          # Redux store and slices
 │   │   └── utils/          # Utility functions
-│   ├── package.json
-│   └── tailwind.config.js
-├── backend/                 # AWS serverless backend
-│   ├── src/
-│   │   ├── agents/         # AI agent implementations
-│   │   ├── handlers/       # Lambda function handlers
-│   │   ├── models/         # Data models and types
-│   │   └── utils/          # Utility functions
-│   ├── template.yaml       # AWS SAM template
 │   └── package.json
-└── README.md
+├── DEPLOYMENT.md            # Comprehensive deployment guide
+└── README.md               # This file
 ```
+
+## 📖 Documentation
+
+- **[Deployment Guide](DEPLOYMENT.md)** - Complete deployment instructions
+- **[API Documentation](backend/api-spec.yaml)** - OpenAPI 3.0 specification
+- **[Setup Guide](SETUP.md)** - Detailed setup instructions
 
 ## 🤖 AI Agents
 
-### Orchestrator Agent
-- Analyzes natural language requirements
-- Creates execution plans
-- Coordinates other agents
-- Handles user clarifications
+### User Management System
+- **Complete CRUD operations** for user profiles
+- **Google OAuth integration** with Cognito
+- **JWT-based authentication** for secure API access
+- **Profile management** with customizable fields
 
-### Product Manager Agent
-- Converts requests to detailed specifications
-- Generates user stories
-- Creates technical requirements
-- Produces SRS documents
+### Project Workflow
+1. **User Authentication** - Google OAuth or email/password
+2. **Project Creation** - Natural language input with AI analysis
+3. **Agent Orchestration** - Coordinated AI agent execution
+4. **Real-time Updates** - WebSocket notifications for progress
+5. **Artifact Generation** - Code, documentation, and deployment assets
+6. **Deployment** - Automated cloud deployment with live URLs
 
-### Frontend Engineer Agent
-- Designs React component architecture
-- Generates responsive UI with Tailwind CSS
-- Implements state management
-- Creates interactive user interfaces
+## 🔧 Configuration
 
-### Backend Engineer Agent
-- Designs database schemas
-- Generates Lambda functions
-- Creates REST APIs
-- Implements authentication
+### Environment Variables (Backend)
+```bash
+# Automatically configured by CloudFormation
+NODE_ENV=production
+USERS_TABLE=agent-builder-users-{env}
+PROJECTS_TABLE=agent-builder-projects-{env}
+TASKS_TABLE=agent-builder-tasks-{env}
+ARTIFACTS_TABLE=agent-builder-artifacts-{env}
+CONNECTIONS_TABLE=agent-builder-connections-{env}
+ARTIFACTS_BUCKET={env}-agent-builder-artifacts-{account}-{region}
+AGENT_TASK_QUEUE_URL=https://sqs.{region}.amazonaws.com/{account}/agent-builder-task-queue-{env}
+PROJECT_NOTIFICATION_TOPIC_ARN=arn:aws:sns:{region}:{account}:agent-builder-notifications-{env}
+WEBSOCKET_API_ENDPOINT={api-id}.execute-api.{region}.amazonaws.com/{env}
 
-### DevOps Engineer Agent
-- Creates infrastructure as code
-- Sets up CI/CD pipelines
-- Handles deployment automation
-- Configures monitoring and logging
+# SSM Parameter references (securely stored)
+OPENAI_API_KEY_PARAM=/agent-builder/{env}/openai-api-key
+GOOGLE_CLIENT_ID_PARAM=/agent-builder/{env}/google-oauth-client-id
+GOOGLE_CLIENT_SECRET_PARAM=/agent-builder/{env}/google-oauth-client-secret
+```
+
+### Environment Variables (Frontend)
+```bash
+# API Configuration
+VITE_API_BASE_URL=https://your-api-gateway-url
+VITE_APP_NAME=Agent Builder
+VITE_APP_VERSION=1.0.0
+
+# AWS Configuration (populated after deployment)
+VITE_AWS_REGION=us-east-1
+VITE_USER_POOL_ID=us-east-1_xxxxxxxxx
+VITE_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
+VITE_USER_POOL_DOMAIN=agent-builder-dev-123456789
+
+# WebSocket Configuration
+VITE_WEBSOCKET_ENDPOINT=wss://your-websocket-api-endpoint
+```
 
 ## 🎯 Supported Application Types
 
-- **Blog Platforms**: Content management systems
-- **Task Management**: Project and task tracking apps
-- **E-commerce**: Online stores with cart and checkout
-- **Social Platforms**: User interaction and content sharing
-- **Dashboard Apps**: Data visualization and analytics
-- **CRUD Applications**: Standard create, read, update, delete apps
+- **Blog Platforms**: Content management systems with user authentication
+- **Task Management**: Project and task tracking applications
+- **E-commerce**: Online stores with cart, checkout, and payment processing
+- **Social Platforms**: User interaction and content sharing features
+- **Dashboard Apps**: Data visualization and analytics interfaces
+- **CRUD Applications**: Standard create, read, update, delete operations
+- **API Services**: RESTful web services with documentation
 
 ## 🔒 Security & Best Practices
 
-- **Authentication**: AWS Cognito integration
-- **Authorization**: Role-based access control
-- **Data Encryption**: At rest and in transit
-- **Input Validation**: Comprehensive validation on all inputs
-- **Error Handling**: Graceful error handling and logging
-- **Monitoring**: CloudWatch integration for observability
+### Authentication & Authorization
+- **AWS Cognito** for user management and JWT tokens
+- **Google OAuth** integration for social login
+- **Role-based access control** for user permissions
+- **API Gateway** authorizers for endpoint protection
 
-## 📊 Performance
+### Data Protection
+- **DynamoDB encryption** at rest and in transit
+- **SSM Parameter Store** for secure secret management
+- **S3 bucket policies** for restricted access
+- **Point-in-time recovery** enabled for all databases
 
-- **Build Time**: 5-30 minutes depending on complexity
-- **Scalability**: Auto-scaling serverless infrastructure
-- **Availability**: 99.9% uptime with AWS infrastructure
-- **Performance**: Lighthouse scores 90+ for generated apps
+### Input Validation & Error Handling
+- **Comprehensive validation** on all API inputs
+- **Structured error responses** with proper HTTP status codes
+- **CloudWatch logging** for monitoring and debugging
+- **Graceful degradation** for service failures
+
+## 📊 Performance & Scaling
+
+### Infrastructure
+- **Auto-scaling serverless** architecture
+- **DynamoDB on-demand billing** for cost optimization
+- **CloudFront CDN** for global content delivery
+- **API Gateway caching** for improved response times
+
+### Monitoring
+- **CloudWatch metrics** for all AWS services
+- **Custom dashboards** for application monitoring
+- **Automated alerts** for error thresholds
+- **Performance tracking** for user experience
+
+### Cost Optimization
+- **Pay-per-use pricing** model
+- **Automatic resource scaling** based on demand
+- **S3 lifecycle policies** for storage optimization
+- **Reserved capacity** for predictable workloads
 
 ## 🧪 Testing
+
+### Backend Testing
+```bash
+cd agent-builder/backend
+npm test                    # Unit tests
+npm run test:integration    # Integration tests
+npm run test:coverage       # Coverage report
+```
 
 ### Frontend Testing
 ```bash
@@ -202,53 +289,64 @@ npm run test:e2e           # End-to-end tests
 npm run test:coverage      # Coverage report
 ```
 
-### Backend Testing
-```bash
-cd agent-builder/backend
-npm test                   # Unit tests
-npm run test:integration   # Integration tests
-```
+## 🚀 Deployment Options
 
-## 🚀 Deployment
+### Architecture Choices
+1. **Nested Stacks** (Recommended)
+   - Modular CloudFormation templates
+   - Easier management and updates
+   - Better separation of concerns
+   ```bash
+   ./deploy.sh dev nested
+   ```
 
-### Development Environment
-```bash
-# Start frontend dev server
-npm run dev
+2. **Monolithic Stack**
+   - Single CloudFormation template
+   - Simpler for small deployments
+   ```bash
+   ./deploy.sh dev monolith
+   ```
 
-# Start backend locally
-sam local start-api
-```
-
-### Production Deployment
-```bash
-# Deploy complete stack
-./deploy.sh production
-```
+### Environment Management
+- **Development**: `samconfig.dev.toml` - Fast iterations, auto-confirm changes
+- **Production**: `samconfig.prod.toml` - Manual approval, enhanced monitoring
 
 ## 📈 Roadmap
 
-### Phase 1 (Current)
+### Phase 1 (Completed) ✅
 - [x] Core AI agents implementation
-- [x] Basic project creation flow
-- [x] Real-time progress tracking
-- [x] Simple CRUD app generation
+- [x] User authentication and management
+- [x] Project creation and tracking
+- [x] Real-time progress updates
+- [x] Basic CRUD app generation
+- [x] Nested stacks architecture
+- [x] OpenAPI documentation
+- [x] Comprehensive deployment guide
 
-### Phase 2 (Next)
+### Phase 2 (In Progress) 🚧
 - [ ] Advanced UI/UX design capabilities
 - [ ] Database migration tools
 - [ ] Multi-language support
 - [ ] Team collaboration features
+- [ ] Enhanced error handling and recovery
 
-### Phase 3 (Future)
+### Phase 3 (Planned) 📋
 - [ ] Integration with external APIs
-- [ ] Advanced deployment options
-- [ ] Custom agent creation
-- [ ] Enterprise features
+- [ ] Advanced deployment options (Docker, Kubernetes)
+- [ ] Custom agent creation framework
+- [ ] Enterprise features and SLA guarantees
+- [ ] Multi-cloud deployment support
 
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
 
 ## 📄 License
 
@@ -256,11 +354,25 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Documentation**: [docs.agent-builder.app](https://docs.agent-builder.app)
-- **Issues**: [GitHub Issues](https://github.com/agent-builder/issues)
-- **Discord**: [Community Chat](https://discord.gg/agent-builder)
-- **Email**: support@agent-builder.app
+For issues and questions:
+- **Documentation**: Review [DEPLOYMENT.md](DEPLOYMENT.md) for setup issues
+- **API Reference**: Check [api-spec.yaml](backend/api-spec.yaml) for endpoint details
+- **Issues**: [GitHub Issues](https://github.com/lequockhanh19521680/Lab-Turtorial/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/lequockhanh19521680/Lab-Turtorial/discussions)
+
+## 🏆 Achievements
+
+This project demonstrates:
+- **Serverless best practices** with AWS SAM
+- **Microservices architecture** with nested stacks
+- **Modern authentication** with Cognito and OAuth
+- **Comprehensive API documentation** with OpenAPI 3.0
+- **Infrastructure as Code** with CloudFormation
+- **DevOps automation** with deployment scripts
+- **Security-first design** with encryption and access controls
 
 ---
 
 **Made with ❤️ by the Agent Builder Team**
+
+*Transforming ideas into applications through the power of AI*
