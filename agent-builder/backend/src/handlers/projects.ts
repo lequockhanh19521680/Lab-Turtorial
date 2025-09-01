@@ -100,28 +100,28 @@ const createProject = async (
     // Create initial tasks for the project
     const initialTasks = [
       {
-        projectId: project.projectId,
+        projectId: project.id,
         assignedAgent: "ProductManagerAgent",
         status: "TODO" as const,
         dependencies: [],
         description: "Analyze requirements and create SRS document",
       },
       {
-        projectId: project.projectId,
+        projectId: project.id,
         assignedAgent: "BackendEngineerAgent",
         status: "TODO" as const,
         dependencies: [],
         description: "Design database schema and create backend APIs",
       },
       {
-        projectId: project.projectId,
+        projectId: project.id,
         assignedAgent: "FrontendEngineerAgent",
         status: "TODO" as const,
         dependencies: [],
         description: "Create React components and user interface",
       },
       {
-        projectId: project.projectId,
+        projectId: project.id,
         assignedAgent: "DevOpsEngineerAgent",
         status: "TODO" as const,
         dependencies: [],
@@ -134,7 +134,7 @@ const createProject = async (
     }
 
     return createSuccessResponse({
-      projectId: project.projectId,
+      projectId: project.id,
       status: "created",
       message: "Project created successfully",
     });

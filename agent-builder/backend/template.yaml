@@ -10,6 +10,7 @@ Globals:
     Environment:
       Variables:
         NODE_ENV: production
+        USERS_TABLE: !Ref UsersTable
         PROJECTS_TABLE: !Ref ProjectsTable
         TASKS_TABLE: !Ref TasksTable
         ARTIFACTS_TABLE: !Ref ArtifactsTable
@@ -27,14 +28,6 @@ Parameters:
     Type: String
     Default: dev
     AllowedValues: [dev, staging, prod]
-  GoogleClientId:
-    Type: String
-    NoEcho: true
-    Description: Google OAuth Client ID
-  GoogleClientSecret:
-    Type: String
-    NoEcho: true
-    Description: Google OAuth Client Secret
 
 Resources:
   # SQS Queue for Agent Task Processing
@@ -165,6 +158,40 @@ Resources:
       ApiId: !Ref WebSocketApi
 
   # Lambda Functions
+  UsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/
+      Handler: users.handler
+      Events:
+        GetUserProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /users/profile
+            Method: get
+        CreateOrUpdateUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /users
+            Method: post
+        UpdateUserProfile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /users/profile
+            Method: patch
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*
+
   ProjectsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -342,18 +369,32 @@ Resources:
             BucketName: !Ref ArtifactsBucket
 
   # DynamoDB Tables
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub agent-builder-users-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
   ProjectsTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Sub agent-builder-projects-${Environment}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: projectId
+        - AttributeName: id
           AttributeType: S
         - AttributeName: userId
           AttributeType: S
       KeySchema:
-        - AttributeName: projectId
+        - AttributeName: id
           KeyType: HASH
       GlobalSecondaryIndexes:
         - IndexName: UserIndex
@@ -362,6 +403,8 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   TasksTable:
     Type: AWS::DynamoDB::Table
@@ -378,6 +421,8 @@ Resources:
           KeyType: HASH
         - AttributeName: taskId
           KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   ArtifactsTable:
     Type: AWS::DynamoDB::Table
@@ -394,6 +439,8 @@ Resources:
           KeyType: HASH
         - AttributeName: artifactId
           KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   # WebSocket Connections Table
   ConnectionsTable:
@@ -463,7 +510,6 @@ Resources:
 
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
-    DependsOn: GoogleIdentityProvider
     Properties:
       UserPoolId: !Ref UserPool
       ClientName: !Sub agent-builder-client-${Environment}
@@ -476,7 +522,6 @@ Resources:
         - ALLOW_REFRESH_TOKEN_AUTH
       SupportedIdentityProviders:
         - COGNITO
-        - Google
       CallbackURLs:
         - !Sub https://${Environment}-agent-builder.app/auth/callback
         - http://localhost:3000/auth/callback
@@ -492,23 +537,23 @@ Resources:
         - profile
       AllowedOAuthFlowsUserPoolClient: true
 
-  # Google Identity Provider (requires manual setup of Google OAuth credentials)
-  GoogleIdentityProvider:
-    Type: AWS::Cognito::UserPoolIdentityProvider
-    DependsOn: UserPool
-    Properties:
-      UserPoolId: !Ref UserPool
-      ProviderName: Google
-      ProviderType: Google
-      ProviderDetails:
-        client_id: !Ref GoogleClientId
-        client_secret: !Ref GoogleClientSecret
-        authorize_scopes: email openid profile
-      AttributeMapping:
-        email: email
-        given_name: given_name
-        family_name: family_name
-        username: sub
+  # Google Identity Provider can be added later via CLI/Console
+  # GoogleIdentityProvider:
+  #   Type: AWS::Cognito::UserPoolIdentityProvider
+  #   DependsOn: UserPool
+  #   Properties:
+  #     UserPoolId: !Ref UserPool
+  #     ProviderName: Google
+  #     ProviderType: Google
+  #     ProviderDetails:
+  #       client_id: "{{resolve:ssm:/agent-builder/${Environment}/google-oauth-client-id}}"
+  #       client_secret: "{{resolve:ssm:/agent-builder/${Environment}/google-oauth-client-secret}}"
+  #       authorize_scopes: email openid profile
+  #     AttributeMapping:
+  #       email: email
+  #       given_name: given_name
+  #       family_name: family_name
+  #       username: sub
 
   # User Pool Domain for OAuth flows
   UserPoolDomain:

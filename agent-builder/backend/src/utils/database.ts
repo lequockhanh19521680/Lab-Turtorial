@@ -8,16 +8,93 @@ import {
   QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
-import { Project, Task, Artifact } from "../models";
+import { User, Project, Task, Artifact } from "../models";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
+const USERS_TABLE = process.env.USERS_TABLE!;
 const PROJECTS_TABLE = process.env.PROJECTS_TABLE!;
 const TASKS_TABLE = process.env.TASKS_TABLE!;
 const ARTIFACTS_TABLE = process.env.ARTIFACTS_TABLE!;
 
 export class DatabaseService {
+  // User operations
+  async createOrUpdateUser(userData: {
+    userId: string;
+    email: string;
+    name?: string;
+    givenName?: string;
+    familyName?: string;
+    picture?: string;
+    provider: "google" | "cognito";
+    providerUserId: string;
+  }): Promise<User> {
+    const now = new Date().toISOString();
+    const existingUser = await this.getUser(userData.userId);
+    
+    const user: User = {
+      ...userData,
+      createdAt: existingUser?.createdAt || now,
+      updatedAt: now,
+      lastLoginAt: now,
+    };
+
+    await docClient.send(
+      new PutCommand({
+        TableName: USERS_TABLE,
+        Item: user,
+      })
+    );
+
+    return user;
+  }
+
+  async getUser(userId: string): Promise<User | null> {
+    const result = await docClient.send(
+      new GetCommand({
+        TableName: USERS_TABLE,
+        Key: { userId },
+      })
+    );
+
+    return (result.Item as User) || null;
+  }
+
+  async updateUser(
+    userId: string,
+    updates: Partial<Omit<User, 'userId' | 'createdAt'>>
+  ): Promise<User> {
+    const updateExpression = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (key !== "userId") {
+        updateExpression.push(`#${key} = :${key}`);
+        expressionAttributeNames[`#${key}`] = key;
+        expressionAttributeValues[`:${key}`] = value;
+      }
+    }
+
+    updateExpression.push("#updatedAt = :updatedAt");
+    expressionAttributeNames["#updatedAt"] = "updatedAt";
+    expressionAttributeValues[":updatedAt"] = new Date().toISOString();
+
+    const result = await docClient.send(
+      new UpdateCommand({
+        TableName: USERS_TABLE,
+        Key: { userId },
+        UpdateExpression: `SET ${updateExpression.join(", ")}`,
+        ExpressionAttributeNames: expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ReturnValues: "ALL_NEW",
+      })
+    );
+
+    return result.Attributes as User;
+  }
+
   // Project operations
   async createProject(
     userId: string,
@@ -25,7 +102,7 @@ export class DatabaseService {
     requestPrompt: string
   ): Promise<Project> {
     const project: Project = {
-      projectId: uuidv4(),
+      id: uuidv4(),
       userId,
       projectName,
       requestPrompt,
@@ -48,7 +125,7 @@ export class DatabaseService {
     const result = await docClient.send(
       new GetCommand({
         TableName: PROJECTS_TABLE,
-        Key: { projectId },
+        Key: { id: projectId },
       })
     );
 
@@ -64,7 +141,7 @@ export class DatabaseService {
     const expressionAttributeValues: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(updates)) {
-      if (key !== "projectId") {
+      if (key !== "id") {
         updateExpression.push(`#${key} = :${key}`);
         expressionAttributeNames[`#${key}`] = key;
         expressionAttributeValues[`:${key}`] = value;
@@ -78,7 +155,7 @@ export class DatabaseService {
     const result = await docClient.send(
       new UpdateCommand({
         TableName: PROJECTS_TABLE,
-        Key: { projectId },
+        Key: { id: projectId },
         UpdateExpression: `SET ${updateExpression.join(", ")}`,
         ExpressionAttributeNames: expressionAttributeNames,
         ExpressionAttributeValues: expressionAttributeValues,
@@ -109,7 +186,7 @@ export class DatabaseService {
     await docClient.send(
       new DeleteCommand({
         TableName: PROJECTS_TABLE,
-        Key: { projectId },
+        Key: { id: projectId },
       })
     );
   }
