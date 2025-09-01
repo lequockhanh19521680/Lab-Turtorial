@@ -1,13 +1,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
-import { DatabaseService } from "../utils/database";
-import { validateRequestBody } from "../utils/validation";
+import { DatabaseService } from "../utils/database.js";
+import { validateRequestBody } from "../utils/validation.js";
 import {
   createSuccessResponse,
   createErrorResponse,
   parseJSON,
   validateRequired,
-} from "../utils/lambda";
+} from "../utils/lambda.js";
 import { z } from 'zod';
 
 // Local schema for orchestration requests

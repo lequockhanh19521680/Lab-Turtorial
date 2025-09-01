@@ -198,6 +198,13 @@ Resources:
     Properties:
       CodeUri: dist/handlers/
       Handler: projects.handler
+      AutoPublishAlias: live
+      DeploymentPreference:
+        Type: Canary10Percent5Minutes
+        Alarms:
+          # CloudWatch Alarms for automatic rollback
+          - !Ref AliasErrorMetricGreaterThanZeroAlarm
+          - !Ref LatestVersionErrorMetricGreaterThanZeroAlarm
       Events:
         GetProjects:
           Type: Api
@@ -878,6 +885,41 @@ Resources:
           - ErrorCode: 403
             ResponseCode: 200
             ResponsePagePath: /index.html
+
+  # CloudWatch Alarms for Canary Deployment
+  AliasErrorMetricGreaterThanZeroAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Lambda function errors
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 2
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: 60
+      Statistic: Sum
+      Threshold: 0
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ProjectsFunction
+        - Name: Resource
+          Value: !Sub "${ProjectsFunction}:live"
+
+  LatestVersionErrorMetricGreaterThanZeroAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Lambda function errors
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 2
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: 60
+      Statistic: Sum
+      Threshold: 0
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ProjectsFunction
+        - Name: Resource
+          Value: !Ref ProjectsFunction.Version
 
 Outputs:
   ApiGatewayEndpoint:

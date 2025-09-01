@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DatabaseService } from "../utils/database";
+import { DatabaseService } from "../utils/database.js";
 import {
   createSuccessResponse,
   createErrorResponse,
   parseJSON,
   validateRequired,
-} from "../utils/lambda";
+} from "../utils/lambda.js";
 
 const db = new DatabaseService();
 

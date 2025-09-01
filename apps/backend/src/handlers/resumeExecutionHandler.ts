@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DatabaseService } from "../utils/database";
-import { queueNextAgent, getNextAgent } from "../utils/sqs";
+import { DatabaseService } from "../utils/database.js";
+import { queueNextAgent, getNextAgent } from "../utils/sqs.js";
 import {
   createSuccessResponse,
   createErrorResponse,
   getUserIdFromEvent,
-} from "../utils/lambda";
+} from "../utils/lambda.js";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 
 const db = new DatabaseService();

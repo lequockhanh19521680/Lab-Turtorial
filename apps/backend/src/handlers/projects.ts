@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { validateRequestBody } from "../utils/validation";
+import { validateRequestBody } from "../utils/validation.js";
 import {
   createSuccessResponse,
   createErrorResponse,
   getUserIdFromEvent,
   parseJSON,
-} from "../utils/lambda";
+} from "../utils/lambda.js";
 import { z } from "zod";
 import type {
   ProjectService as ProjectServiceType,

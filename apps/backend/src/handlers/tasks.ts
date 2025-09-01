@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { TaskService, ProjectService, Task } from "@lab-tutorial/infrastructure";
-import { createSuccessResponse, createErrorResponse } from "../utils/lambda";
+import { createSuccessResponse, createErrorResponse } from "../utils/lambda.js";
 
 const taskService = new TaskService();
 const projectService = new ProjectService();

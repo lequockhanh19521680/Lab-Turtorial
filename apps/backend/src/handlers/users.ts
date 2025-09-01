@@ -1,12 +1,12 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { UserService } from "@lab-tutorial/infrastructure";
-import { validateRequestBody } from "../utils/validation";
+import { validateRequestBody } from "../utils/validation.js";
 import {
   createSuccessResponse,
   createErrorResponse,
   getUserIdFromEvent,
   parseJSON,
-} from "../utils/lambda";
+} from "../utils/lambda.js";
 import jwt from "jsonwebtoken";
 import { z } from 'zod';
 
