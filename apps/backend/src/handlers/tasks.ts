@@ -1,6 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { TaskService } from "../services/TaskService";
-import { ProjectService } from "../services/ProjectService";
+import { TaskService, ProjectService, Task } from "@lab-tutorial/infrastructure";
 import { createSuccessResponse, createErrorResponse } from "../utils/lambda";
 
 const taskService = new TaskService();
@@ -65,11 +64,11 @@ const getProjectStatus = async (
     // Calculate progress based on task completion
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(
-      (task) => task.status === "DONE"
+      (task: Task) => task.status === "DONE"
     ).length;
-    const failedTasks = tasks.filter((task) => task.status === "FAILED").length;
+    const failedTasks = tasks.filter((task: Task) => task.status === "FAILED").length;
     const inProgressTasks = tasks.filter(
-      (task) => task.status === "IN_PROGRESS"
+      (task: Task) => task.status === "IN_PROGRESS"
     );
 
     let progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
@@ -123,7 +122,7 @@ const getProjectStatus = async (
         completed: completedTasks,
         inProgress: inProgressTasks.length,
         failed: failedTasks,
-        pending: tasks.filter((task) => task.status === "TODO").length,
+        pending: tasks.filter((task: Task) => task.status === "TODO").length,
       },
     });
   } catch (error) {
