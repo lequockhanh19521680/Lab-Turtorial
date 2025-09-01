@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: "Agent Builder - Authentication Stack (Cognito User Pool and Identity Providers)"
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+Resources:
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub agent-builder-users-${Environment}
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: given_name
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+        - Name: family_name
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub agent-builder-client-${Environment}
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - !Sub https://${Environment}-agent-builder.app/auth/callback
+        - http://localhost:3000/auth/callback
+      LogoutURLs:
+        - !Sub https://${Environment}-agent-builder.app/auth/logout
+        - http://localhost:3000/auth/logout
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+
+  # User Pool Domain for OAuth flows
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    DependsOn: UserPool
+    Properties:
+      UserPoolId: !Ref UserPool
+      Domain: !Sub ${Environment}-agent-builder-${AWS::AccountId}
+
+Outputs:
+  UserPoolId:
+    Description: "Cognito User Pool ID"
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub ${AWS::StackName}-UserPoolId
+
+  UserPoolClientId:
+    Description: "Cognito User Pool Client ID"
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub ${AWS::StackName}-UserPoolClientId
+
+  UserPoolArn:
+    Description: "Cognito User Pool ARN"
+    Value: !GetAtt UserPool.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-UserPoolArn
+
+  UserPoolDomain:
+    Description: "Cognito User Pool Domain"
+    Value: !Ref UserPoolDomain
+    Export:
+      Name: !Sub ${AWS::StackName}-UserPoolDomain

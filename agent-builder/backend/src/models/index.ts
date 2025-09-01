@@ -1,5 +1,19 @@
+export interface User {
+  userId: string;
+  email: string;
+  name?: string;
+  givenName?: string;
+  familyName?: string;
+  picture?: string;
+  provider: "google" | "cognito";
+  providerUserId: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string;
+}
+
 export interface Project {
-  projectId: string;
+  id: string;
   userId: string;
   projectName: string;
   requestPrompt: string;

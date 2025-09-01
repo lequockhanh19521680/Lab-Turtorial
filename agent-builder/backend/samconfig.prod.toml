@@ -1,0 +1,32 @@
+version = 0.1
+[default]
+[default.global]
+[default.global.parameters]
+stack_name = "agent-builder-sam-prod"
+s3_bucket = ""
+s3_prefix = "agent-builder-prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = false
+parameter_overrides = [
+    "Environment=prod"
+]
+
+[default.build]
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "agent-builder-sam-prod"
+s3_bucket = ""
+s3_prefix = "agent-builder-prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = false
+parameter_overrides = [
+    "Environment=prod"
+]
