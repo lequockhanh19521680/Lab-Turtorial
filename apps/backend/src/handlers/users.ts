@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { UserService } from "../services/UserService";
+import { UserService } from "@lab-tutorial/infrastructure";
 import { validateRequestBody } from "../utils/validation";
 import {
   createSuccessResponse,

@@ -1,7 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { ProjectService } from "../services/ProjectService";
-import { UserService } from "../services/UserService";
-import { TaskService } from "../services/TaskService";
+import { ProjectService, UserService, TaskService } from "@lab-tutorial/infrastructure";
 import { validateRequestBody } from "../utils/validation";
 import {
   createSuccessResponse,
@@ -107,50 +105,14 @@ const createProject = async (
     
     const { projectName, requestPrompt } = validation.data;
 
-    const project = await projectService.createProject(
+    const project = await projectService.createProject({
       userId,
       projectName,
       requestPrompt
-    );
-
-    // Create initial tasks for the project
-    const initialTasks = [
-      {
-        projectId: project.id,
-        assignedAgent: "ProductManagerAgent",
-        status: "TODO" as const,
-        dependencies: [],
-        description: "Analyze requirements and create SRS document",
-      },
-      {
-        projectId: project.id,
-        assignedAgent: "BackendEngineerAgent",
-        status: "TODO" as const,
-        dependencies: [],
-        description: "Design database schema and create backend APIs",
-      },
-      {
-        projectId: project.id,
-        assignedAgent: "FrontendEngineerAgent",
-        status: "TODO" as const,
-        dependencies: [],
-        description: "Create React components and user interface",
-      },
-      {
-        projectId: project.id,
-        assignedAgent: "DevOpsEngineerAgent",
-        status: "TODO" as const,
-        dependencies: [],
-        description: "Deploy application to cloud infrastructure",
-      },
-    ];
-
-    for (const task of initialTasks) {
-      await taskService.createTask(task);
-    }
+    });
 
     return createSuccessResponse({
-      projectId: project.id,
+      projectId: project.projectId,
       status: "created",
       message: "Project created successfully",
     });
