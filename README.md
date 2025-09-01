@@ -270,6 +270,98 @@ User Request → Orchestrator → Agent Queue (SQS) → Agent Processing → Res
 - **Parameter Store** - Secure configuration management
 - **HTTPS Only** - TLS encryption for all traffic
 
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### ERR_MODULE_NOT_FOUND Errors
+
+**Issue**: `Cannot find module '/var/utils/validation' imported from /var/task/projects.js`
+
+**Cause**: When using ES Modules (`"module": "ESNext"` in tsconfig.json), Node.js requires file extensions (.js) in relative imports.
+
+**Solution**: This is automatically handled by the build process. The `fix-import-paths.js` script adds `.js` extensions to all import statements during compilation.
+
+```bash
+# Verify the build process fixes imports
+npm run build
+npm run sam:build
+npm run sam:local
+```
+
+#### Build Failures
+
+**Issue**: TypeScript compilation errors or missing dependencies
+
+**Solution**:
+```bash
+# Clean and reinstall dependencies
+npm run clean
+npm install
+
+# Check TypeScript issues
+npm run type-check
+
+# Fix linting issues  
+npm run lint:fix
+
+# Build packages in correct order
+cd packages/infrastructure && npm run build
+cd ../../apps/backend && npm run build
+```
+
+#### SAM Local Issues
+
+**Issue**: Lambda functions fail to start or import errors
+
+**Solution**:
+```bash
+# Ensure all packages are built
+npm run build
+
+# Clean SAM artifacts
+npm run sam:clean
+
+# Rebuild SAM completely
+npm run sam:build
+
+# Check logs for specific errors
+sam logs --name ProjectsFunction --stack-name agent-builder-sam-dev
+```
+
+#### Permission Errors
+
+**Issue**: AWS CLI or deployment permission errors
+
+**Solution**:
+```bash
+# Check AWS configuration
+aws configure list
+aws sts get-caller-identity
+
+# Verify required permissions for:
+# - Lambda function management
+# - API Gateway operations  
+# - DynamoDB table operations
+# - S3 bucket operations
+# - CloudFormation stack operations
+```
+
+### Development Tips
+
+- **Use TypeScript strict mode** - Catches errors early
+- **Run tests frequently** - `npm run test:watch`
+- **Check logs regularly** - CloudWatch provides detailed error information
+- **Use sam local** - Test Lambda functions locally before deployment
+- **Monitor build output** - Check for warnings in build logs
+
+### Getting Help
+
+1. **Check this troubleshooting section** first
+2. **Review CloudWatch logs** for runtime errors
+3. **Check GitHub Issues** for known problems
+4. **Open new issues** with detailed error information
+
 ## 🤝 Contributing
 
 ### Development Setup
