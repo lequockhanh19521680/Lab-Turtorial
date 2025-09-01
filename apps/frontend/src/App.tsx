@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-import Dashboard from './pages/Dashboard'
+import EnhancedDashboard from './pages/EnhancedDashboard'
 import ProjectDetail from './pages/ProjectDetail'
 import CreateProject from './pages/CreateProject'
 import Login from './pages/Login'
@@ -21,7 +21,7 @@ function App() {
         <Route path="/" element={
           <ProtectedRoute>
             <Layout>
-              <Dashboard />
+              <EnhancedDashboard />
             </Layout>
           </ProtectedRoute>
         } />
