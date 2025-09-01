@@ -1,0 +1,49 @@
+{
+  "name": "@lab-tutorial/root",
+  "version": "1.0.0",
+  "description": "Lab Tutorial - Professional Turborepo Monorepo with type-safe API contract",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build && changeset publish"
+  },
+  "keywords": [
+    "monorepo",
+    "turborepo",
+    "typescript",
+    "aws",
+    "serverless",
+    "react",
+    "lambda",
+    "api-contract"
+  ],
+  "author": "Lab Tutorial Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lequockhanh19521680/Lab-Turtorial.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "packageManager": "npm@10.9.0",
+  "devDependencies": {
+    "turbo": "^2.5.6",
+    "tsup": "^8.0.0",
+    "prettier": "^3.0.0",
+    "@changesets/cli": "^2.26.0"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@lab-tutorial/shared-types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript type definitions for Lab Tutorial monorepo",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "lint": "eslint src --max-warnings 0"
+  },
+  "keywords": [
+    "typescript",
+    "types",
+    "api-contract",
+    "shared"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
