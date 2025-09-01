@@ -1,8 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DatabaseService } from "../utils/database";
+import { TaskService } from "../services/TaskService";
+import { ProjectService } from "../services/ProjectService";
 import { createSuccessResponse, createErrorResponse } from "../utils/lambda";
 
-const db = new DatabaseService();
+const taskService = new TaskService();
+const projectService = new ProjectService();
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -40,7 +42,7 @@ const getProjectTasks = async (
   projectId: string
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const tasks = await db.getProjectTasks(projectId);
+    const tasks = await taskService.getProjectTasks(projectId);
 
     return createSuccessResponse({ tasks });
   } catch (error) {
@@ -53,12 +55,12 @@ const getProjectStatus = async (
   projectId: string
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const project = await db.getProject(projectId);
+    const project = await projectService.getProject(projectId);
     if (!project) {
       return createErrorResponse(404, "Project not found");
     }
 
-    const tasks = await db.getProjectTasks(projectId);
+    const tasks = await taskService.getProjectTasks(projectId);
 
     // Calculate progress based on task completion
     const totalTasks = tasks.length;
@@ -108,7 +110,7 @@ const getProjectStatus = async (
 
     // Update project status in database if changed
     if (status !== project.status) {
-      await db.updateProject(projectId, { status });
+      await projectService.updateProject(projectId, { status });
     }
 
     return createSuccessResponse({

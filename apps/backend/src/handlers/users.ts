@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DatabaseService } from "../utils/database";
+import { UserService } from "../services/UserService";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -8,7 +8,7 @@ import {
 } from "../utils/lambda";
 import jwt from "jsonwebtoken";
 
-const db = new DatabaseService();
+const userService = new UserService();
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -51,7 +51,7 @@ async function getUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return createErrorResponse(401, "Unauthorized");
     }
 
-    const user = await db.getUser(userId);
+    const user = await userService.getUser(userId);
     if (!user) {
       return createErrorResponse(404, "User not found");
     }
@@ -119,7 +119,7 @@ async function createOrUpdateUser(event: APIGatewayProxyEvent): Promise<APIGatew
       };
     }
 
-    const user = await db.createOrUpdateUser(userData);
+    const user = await userService.createOrUpdateUser(userData);
     return createSuccessResponse(user);
   } catch (error) {
     console.error("Error creating/updating user:", error);
@@ -157,7 +157,7 @@ async function updateUserProfile(event: APIGatewayProxyEvent): Promise<APIGatewa
       return createErrorResponse(400, "No valid fields to update");
     }
 
-    const updatedUser = await db.updateUser(userId, updates);
+    const updatedUser = await userService.updateUser(userId, updates);
     return createSuccessResponse(updatedUser);
   } catch (error) {
     console.error("Error updating user profile:", error);

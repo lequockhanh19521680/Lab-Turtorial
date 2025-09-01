@@ -1,5 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DatabaseService } from "../utils/database";
+import { ProjectService } from "../services/ProjectService";
+import { UserService } from "../services/UserService";
+import { TaskService } from "../services/TaskService";
 import {
   createSuccessResponse,
   createErrorResponse,
@@ -8,7 +10,9 @@ import {
   parseJSON,
 } from "../utils/lambda";
 
-const db = new DatabaseService();
+const projectService = new ProjectService();
+const userService = new UserService();
+const taskService = new TaskService();
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -56,7 +60,7 @@ const getProjects = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const userId = getUserIdFromEvent(event);
-    const projects = await db.getUserProjects(userId);
+    const projects = await userService.getUserProjects(userId);
 
     return createSuccessResponse({ projects });
   } catch (error) {
@@ -69,7 +73,7 @@ const getProject = async (
   projectId: string
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const project = await db.getProject(projectId);
+    const project = await projectService.getProject(projectId);
 
     if (!project) {
       return createErrorResponse(404, "Project not found");
@@ -91,7 +95,7 @@ const createProject = async (
 
     validateRequired(body, ["projectName", "requestPrompt"]);
 
-    const project = await db.createProject(
+    const project = await projectService.createProject(
       userId,
       body.projectName,
       body.requestPrompt
@@ -130,7 +134,7 @@ const createProject = async (
     ];
 
     for (const task of initialTasks) {
-      await db.createTask(task);
+      await taskService.createTask(task);
     }
 
     return createSuccessResponse({
@@ -151,7 +155,7 @@ const updateProject = async (
   try {
     const body = parseJSON(event.body || "{}");
 
-    const project = await db.updateProject(projectId, body);
+    const project = await projectService.updateProject(projectId, body);
 
     return createSuccessResponse({ project });
   } catch (error) {
@@ -164,7 +168,7 @@ const deleteProject = async (
   projectId: string
 ): Promise<APIGatewayProxyResult> => {
   try {
-    await db.deleteProject(projectId);
+    await projectService.deleteProject(projectId);
 
     return createSuccessResponse({ message: "Project deleted successfully" });
   } catch (error) {
