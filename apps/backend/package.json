@@ -18,6 +18,8 @@
     "sam:build": "sam build",
     "sam:local": "sam local start-api",
     "deploy": "sam deploy --guided",
+    "deploy:dev": "sam deploy --config-file samconfig.dev.toml --resolve-s3",
+    "deploy:prod": "sam deploy --config-file samconfig.prod.toml --resolve-s3",
     "clean": "rm -rf dist"
   },
   "dependencies": {
