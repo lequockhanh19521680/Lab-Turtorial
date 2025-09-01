@@ -6,7 +6,8 @@ Globals:
   Function:
     Timeout: 300
     Runtime: nodejs20.x
-    MemorySize: 1024
+    Architectures:
+      - x86_64
     Environment:
       Variables:
         NODE_ENV: production

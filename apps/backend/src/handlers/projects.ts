@@ -1,5 +1,4 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { ProjectService, UserService, TaskService } from "@lab-tutorial/infrastructure";
 import { validateRequestBody } from "../utils/validation";
 import {
   createSuccessResponse,
@@ -7,17 +6,45 @@ import {
   getUserIdFromEvent,
   parseJSON,
 } from "../utils/lambda";
-import { z } from 'zod';
+import { z } from "zod";
+import type {
+  ProjectService as ProjectServiceType,
+  UserService as UserServiceType,
+  TaskService as TaskServiceType,
+} from "@lab-tutorial/infrastructure";
+
+interface Services {
+  ProjectService?: ProjectServiceType;
+  UserService?: UserServiceType;
+  TaskService?: TaskServiceType;
+}
 
 // Local schemas for validation
 const CreateProjectRequestSchema = z.object({
-  projectName: z.string().min(1, 'Project name is required').max(100, 'Project name too long').trim(),
-  requestPrompt: z.string().min(10, 'Request prompt must be at least 10 characters').max(2000, 'Request prompt too long').trim(),
+  projectName: z
+    .string()
+    .min(1, "Project name is required")
+    .max(100, "Project name too long")
+    .trim(),
+  requestPrompt: z
+    .string()
+    .min(10, "Request prompt must be at least 10 characters")
+    .max(2000, "Request prompt too long")
+    .trim(),
 });
 
-const projectService = new ProjectService();
-const userService = new UserService();
-const taskService = new TaskService();
+let services: Services = {};
+
+const initializeServices = async () => {
+  if (!services.ProjectService) {
+    const { ProjectService, UserService, TaskService } = await import(
+      "@lab-tutorial/infrastructure"
+    );
+    services.ProjectService = new ProjectService();
+    services.UserService = new UserService();
+    services.TaskService = new TaskService();
+  }
+};
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -25,6 +52,7 @@ export const handler = async (
   console.log("Projects handler event:", JSON.stringify(event, null, 2));
 
   try {
+    await initializeServices();
     const method = event.httpMethod;
     const pathParameters = event.pathParameters || {};
 
@@ -65,7 +93,7 @@ const getProjects = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const userId = getUserIdFromEvent(event);
-    const projects = await userService.getUserProjects(userId);
+    const projects = await services.UserService!.getUserProjects(userId);
 
     return createSuccessResponse({ projects });
   } catch (error) {
@@ -78,7 +106,7 @@ const getProject = async (
   projectId: string
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const project = await projectService.getProject(projectId);
+    const project = await services.ProjectService!.getProject(projectId);
 
     if (!project) {
       return createErrorResponse(404, "Project not found");
@@ -96,19 +124,22 @@ const createProject = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const userId = getUserIdFromEvent(event);
-    
+
     // Validate request body with Zod
-    const validation = validateRequestBody(event.body, CreateProjectRequestSchema);
+    const validation = validateRequestBody(
+      event.body,
+      CreateProjectRequestSchema
+    );
     if (!validation.success) {
       return validation.response;
     }
-    
+
     const { projectName, requestPrompt } = validation.data;
 
-    const project = await projectService.createProject({
+    const project = await services.ProjectService!.createProject({
       userId,
       projectName,
-      requestPrompt
+      requestPrompt,
     });
 
     return createSuccessResponse({
@@ -129,7 +160,10 @@ const updateProject = async (
   try {
     const body = parseJSON(event.body || "{}");
 
-    const project = await projectService.updateProject(projectId, body);
+    const project = await services.ProjectService!.updateProject(
+      projectId,
+      body
+    );
 
     return createSuccessResponse({ project });
   } catch (error) {
@@ -142,7 +176,7 @@ const deleteProject = async (
   projectId: string
 ): Promise<APIGatewayProxyResult> => {
   try {
-    await projectService.deleteProject(projectId);
+    await services.ProjectService!.deleteProject(projectId);
 
     return createSuccessResponse({ message: "Project deleted successfully" });
   } catch (error) {
