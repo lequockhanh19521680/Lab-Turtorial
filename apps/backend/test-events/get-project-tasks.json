@@ -1,0 +1,21 @@
+{
+  "httpMethod": "GET",
+  "path": "/projects/test-project-123/tasks",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer dummy-test-token"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-user-id-123",
+        "email": "test@example.com"
+      }
+    }
+  },
+  "body": null,
+  "pathParameters": {
+    "id": "test-project-123"
+  },
+  "queryStringParameters": null
+}

@@ -28,8 +28,14 @@ export const handler = async (
     JSON.stringify(event, null, 2)
   );
 
-  for (const record of event.Records) {
-    await processAgentTask(record);
+  try {
+    for (const record of event.Records) {
+      await processAgentTask(record);
+    }
+  } catch (error) {
+    console.error("Error in agent worker handler:", error);
+    // For SQS handlers, we don't throw to avoid sending messages to DLQ unnecessarily
+    // Individual record processing errors are handled in processAgentTask
   }
 };
 

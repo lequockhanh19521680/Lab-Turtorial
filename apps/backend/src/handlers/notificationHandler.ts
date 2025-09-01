@@ -31,8 +31,14 @@ interface ProjectNotification {
 export const handler = async (event: SNSEvent): Promise<void> => {
   console.log("SNS notification event:", JSON.stringify(event, null, 2));
 
-  for (const record of event.Records) {
-    await processNotification(record);
+  try {
+    for (const record of event.Records) {
+      await processNotification(record);
+    }
+  } catch (error) {
+    console.error("Error in notification handler:", error);
+    // For SNS handlers, we don't throw to avoid disrupting the notification flow
+    // Individual record processing errors are handled in processNotification
   }
 };
 

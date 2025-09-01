@@ -1,0 +1,19 @@
+{
+  "httpMethod": "POST",
+  "path": "/orchestrator",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer dummy-test-token"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-user-id-123",
+        "email": "test@example.com"
+      }
+    }
+  },
+  "body": "{\"projectId\": \"test-project-123\"}",
+  "pathParameters": null,
+  "queryStringParameters": null
+}
