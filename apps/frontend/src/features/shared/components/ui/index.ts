@@ -14,3 +14,7 @@ export * from './table'
 export * from './textarea'
 export * from './toast'
 export * from './toaster'
+
+// Custom Enhanced Components
+export * from './progress-indicator'
+export * from './notification-center'

@@ -10,6 +10,7 @@ import CreateProject from './pages/CreateProject'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import AuthCallback from './pages/AuthCallback'
+import ComponentShowcase from './pages/ComponentShowcase'
 import { Toaster } from './features/shared/components/ui/toaster'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/showcase" element={<ComponentShowcase />} />
         
         {/* Protected routes */}
         <Route path="/" element={

@@ -191,6 +191,27 @@
     @apply border-green-500 focus:ring-green-500;
   }
   
+  /* Modern Status Components */
+  .status-badge {
+    @apply px-3 py-1.5 rounded-full text-xs font-medium uppercase tracking-wider;
+  }
+
+  .status-pending {
+    @apply bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-400;
+  }
+
+  .status-success {
+    @apply bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-400;
+  }
+
+  .status-error {
+    @apply bg-error-100 text-error-800 dark:bg-error-900/20 dark:text-error-400;
+  }
+
+  .status-info {
+    @apply bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400;
+  }
+  
   /* Loading Skeleton Components */
   .skeleton {
     @apply animate-pulse bg-muted rounded;
@@ -305,4 +326,118 @@
   .fab:hover {
     box-shadow: 0 8px 32px rgba(0, 102, 255, 0.4);
   }
+
+  .card-header {
+    @apply mb-4 pb-4 border-b border-border;
+  }
+
+  .card-title {
+    @apply text-xl font-heading font-semibold text-foreground;
+  }
+
+  .card-description {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+  
+  /* Enhanced Input Components */
+  .input-field {
+    @apply w-full px-4 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200;
+  }
+
+  .input-error {
+    @apply border-error-500 focus:ring-error-500;
+  }
+
+  .input-success {
+    @apply border-success-500 focus:ring-success-500;
+  }
+  
+  /* Modern Status Components */
+  .status-badge {
+    @apply px-3 py-1.5 rounded-full text-xs font-medium uppercase tracking-wider;
+  }
+
+  .status-pending {
+    @apply bg-warning-100 text-warning-800 border border-warning-200;
+  }
+  
+  .status-in-progress {
+    @apply bg-primary-100 text-primary-800 border border-primary-200 animate-pulse-slow;
+  }
+  
+  .status-completed {
+    @apply bg-success-100 text-success-800 border border-success-200;
+  }
+  
+  .status-failed {
+    @apply bg-error-100 text-error-800 border border-error-200;
+  }
+
+  /* Progress Components */
+  .progress-bar {
+    @apply w-full bg-secondary-200 rounded-full h-2 overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-300 ease-out;
+  }
+
+  /* Layout Helpers */
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-max {
+    @apply max-w-7xl mx-auto;
+  }
+
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-br from-primary-50 via-white to-accent-50;
+  }
+
+  /* Animation Helpers */
+  .animate-entrance {
+    @apply animate-fade-in-up;
+  }
+
+  .animate-slide-left {
+    @apply animate-slide-in-left;
+  }
+
+  .animate-slide-right {
+    @apply animate-slide-in-right;
+  }
+
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-medium;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-glow;
+  }
+
+  /* Text Styles */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent;
+  }
+
+  .text-muted {
+    @apply text-foreground-muted;
+  }
+
+  /* Layout Grid */
+  .grid-auto-fit {
+    @apply grid gap-6;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  .grid-3-col {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+  }
+}
 }
