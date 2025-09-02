@@ -131,25 +131,25 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       
       <DropdownMenuContent 
         align="end" 
-        className="w-80 max-h-96 p-0 overflow-hidden"
-        sideOffset={5}
+        className="w-96 max-h-[32rem] p-0 overflow-hidden shadow-xl border border-border/50"
+        sideOffset={8}
       >
-        <div className="bg-gradient-to-r from-primary to-cyan-500 text-white p-4">
+        <div className="bg-gradient-to-r from-primary to-cyan-500 text-white p-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Notifications</h3>
+            <h3 className="font-semibold text-lg">Notifications</h3>
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onMarkAllRead}
-                className="text-white hover:bg-white/20 text-xs h-6 px-2"
+                className="text-white hover:bg-white/20 text-xs h-7 px-3 font-medium"
               >
                 Mark all read
               </Button>
             )}
           </div>
           {unreadCount > 0 && (
-            <p className="text-sm opacity-90 mt-1">
+            <p className="text-sm opacity-90 mt-2">
               {unreadCount} new notification{unreadCount !== 1 ? 's' : ''}
             </p>
           )}
@@ -157,61 +157,61 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         
         <div className="max-h-80 overflow-y-auto custom-scrollbar">
           {notifications.length === 0 ? (
-            <div className="p-8 text-center">
-              <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-              <p className="text-muted-foreground text-sm">No notifications yet</p>
-              <p className="text-muted-foreground text-xs mt-1">
-                You'll see updates about your projects here
+            <div className="p-12 text-center">
+              <Bell className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground font-medium">No notifications yet</p>
+              <p className="text-muted-foreground text-sm mt-2 max-w-48 mx-auto">
+                You'll see updates about your projects and activities here
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-border/60">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={cn(
-                    'p-4 border-l-4 cursor-pointer transition-all duration-200 hover:bg-muted/50',
+                    'p-5 border-l-4 cursor-pointer transition-all duration-200 hover:bg-muted/40 active:bg-muted/60',
                     getNotificationColor(notification.type),
-                    !notification.read && 'bg-muted/30'
+                    !notification.read && 'bg-muted/20'
                   )}
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 mt-0.5">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 mt-1">
                       {getNotificationIcon(notification.type)}
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                        <div className="flex-1 pr-2">
                           <p className={cn(
-                            'text-sm font-medium',
-                            !notification.read && 'font-semibold'
+                            'text-sm font-medium leading-5',
+                            !notification.read && 'font-semibold text-foreground'
                           )}>
                             {notification.title}
                           </p>
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
                             {notification.message}
                           </p>
                         </div>
                         
-                        <div className="flex items-center space-x-1 ml-2">
+                        <div className="flex items-center space-x-2 ml-2">
                           {!notification.read && (
-                            <div className="w-2 h-2 bg-primary rounded-full" />
+                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                           )}
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={(e) => handleDismiss(notification, e)}
-                            className="p-1 h-6 w-6 text-muted-foreground hover:text-foreground"
+                            className="p-1.5 h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-md"
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="text-xs text-muted-foreground font-medium">
                           {formatTimestamp(notification.timestamp)}
                         </span>
                         
@@ -220,7 +220,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                             variant="outline"
                             size="sm"
                             onClick={(e) => handleActionClick(notification, e)}
-                            className="h-6 px-2 text-xs"
+                            className="h-7 px-3 text-xs font-medium"
                           >
                             {notification.actionLabel}
                           </Button>
@@ -230,7 +230,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       {notification.priority === 'high' && (
                         <Badge 
                           variant="destructive" 
-                          className="mt-2 text-xs"
+                          className="mt-3 text-xs px-2 py-0.5"
                         >
                           High Priority
                         </Badge>
@@ -244,10 +244,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         </div>
         
         {notifications.length > 0 && (
-          <div className="p-3 border-t border-border bg-muted/30">
+          <div className="p-4 border-t border-border bg-muted/20">
             <Button 
               variant="ghost" 
-              className="w-full text-sm text-muted-foreground hover:text-foreground"
+              className="w-full text-sm text-muted-foreground hover:text-foreground font-medium py-2"
               onClick={() => setIsOpen(false)}
             >
               View all notifications
