@@ -25,11 +25,10 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 
-// SERA UI Components
-import { SeraCard, SeraCardContent, SeraCardHeader, SeraCardTitle } from '@/components/ui/seraCard'
-import { PrimaryButton, SecondaryButton, GhostButton } from '@/components/ui/seraButton'
-import { StatusBadge } from '@/components/ui/seraBadge'
-import { SeraLoading, SeraErrorState } from '@/components/ui/seraLoading'
+// Shadcn UI Components
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -128,15 +127,15 @@ const ProjectDetail: React.FC = () => {
   }
 
   const getStatusBadge = (status: string) => {
-    const statusMap = {
-      'COMPLETED': 'completed',
-      'FAILED': 'failed', 
-      'IN_PROGRESS': 'in-progress',
-      'PENDING': 'pending'
+    const statusConfig = {
+      'COMPLETED': { variant: 'default', label: 'Completed' },
+      'FAILED': { variant: 'destructive', label: 'Failed' }, 
+      'IN_PROGRESS': { variant: 'secondary', label: 'In Progress' },
+      'PENDING': { variant: 'outline', label: 'Pending' }
     } as const
     
-    const mappedStatus = statusMap[status as keyof typeof statusMap] || 'pending'
-    return <StatusBadge status={mappedStatus} showIcon={true} />
+    const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'outline', label: 'Pending' }
+    return <Badge variant={config.variant as any}>{config.label}</Badge>
   }
 
   const handleApprove = async () => {
@@ -195,27 +194,37 @@ const ProjectDetail: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SeraLoading 
-        text="Loading project details..." 
-        size="lg" 
-        variant="center" 
-      />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <p className="text-muted-foreground">Loading project details...</p>
+        </div>
+      </div>
     )
   }
 
   if (error || !project) {
     return (
-      <SeraErrorState
-        title="Project not found"
-        description="The project you're looking for doesn't exist or has been deleted."
-        onRetry={() => refetch()}
-        size="lg"
-        action={
-          <PrimaryButton asChild>
-            <Link to="/">Back to Dashboard</Link>
-          </PrimaryButton>
-        }
-      />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="mx-auto h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+            <XCircle className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Project not found</h3>
+            <p className="text-muted-foreground">The project you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
+          </div>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => refetch()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/">Back to Dashboard</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
     )
   }
 
@@ -224,14 +233,14 @@ const ProjectDetail: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <GhostButton size="icon" asChild>
+          <Button variant="ghost" size="icon" asChild>
             <Link to="/">
               <ArrowLeft className="h-5 w-5" />
             </Link>
-          </GhostButton>
+          </Button>
           <div>
-            <h1 className="text-3xl font-bold text-secondary-900">{project.projectName}</h1>
-            <p className="text-secondary-600 mt-1">{project.requestPrompt}</p>
+            <h1 className="text-3xl font-bold">{project.projectName}</h1>
+            <p className="text-muted-foreground mt-1">{project.requestPrompt}</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
@@ -248,10 +257,10 @@ const ProjectDetail: React.FC = () => {
               </div>
             )}
           </div>
-          <SecondaryButton onClick={() => refetch()}>
+          <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
-          </SecondaryButton>
+          </Button>
           <div className="flex items-center space-x-2">
             {getStatusIcon(project.status)}
             {getStatusBadge(project.status)}
@@ -263,14 +272,14 @@ const ProjectDetail: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column - Project Summary */}
         <div className="lg:col-span-3 space-y-6">
-          <SeraCard variant="elevated">
-            <SeraCardHeader>
-              <SeraCardTitle className="flex items-center space-x-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
                 <Zap className="h-5 w-5 text-primary-600" />
                 <span>Project Overview</span>
-              </SeraCardTitle>
-            </SeraCardHeader>
-            <SeraCardContent className="space-y-4">
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="flex items-center space-x-3">
                 <Calendar className="h-4 w-4 text-secondary-400" />
                 <div>
@@ -300,40 +309,40 @@ const ProjectDetail: React.FC = () => {
                   </p>
                 </div>
               </div>
-            </SeraCardContent>
-          </SeraCard>
+            </CardContent>
+          </Card>
 
-          <SeraCard variant="elevated">
-            <SeraCardHeader>
-              <SeraCardTitle>Quick Actions</SeraCardTitle>
-            </SeraCardHeader>
-            <SeraCardContent className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
               {project.status === 'COMPLETED' && (
-                <PrimaryButton className="w-full">
+                <Button className="w-full">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   View Live App
-                </PrimaryButton>
+                </Button>
               )}
               
-              <SecondaryButton className="w-full">
+              <Button variant="outline" className="w-full">
                 <Download className="h-4 w-4 mr-2" />
                 Download Source
-              </SecondaryButton>
+              </Button>
               
               {project.status === 'FAILED' && (
-                <PrimaryButton className="w-full">
+                <Button className="w-full">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry Build
-                </PrimaryButton>
+                </Button>
               )}
-            </SeraCardContent>
-          </SeraCard>
+            </CardContent>
+          </Card>
 
-          <SeraCard variant="elevated">
-            <SeraCardHeader>
-              <SeraCardTitle>Progress Stats</SeraCardTitle>
-            </SeraCardHeader>
-            <SeraCardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>Progress Stats</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-secondary-600">Tasks Completed</span>
@@ -352,8 +361,8 @@ const ProjectDetail: React.FC = () => {
                   </div>
                 )}
               </div>
-            </SeraCardContent>
-          </SeraCard>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Middle Column - Timeline */}

@@ -33,7 +33,7 @@ Frontend (React/Vite)
 ### Frontend
 - **Framework**: React 18 + TypeScript
 - **Build Tool**: Vite with HMR
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS with Shadcn UI components
 - **State Management**: Redux Toolkit + React Query
 - **Authentication**: AWS Cognito with OAuth (Google)
 
