@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { X, Users, Heart, MessageCircle, Share2, MoreHorizontal, Star, TrendingUp, Plus } from 'lucide-react'
-import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '../features/shared/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
+import UserRecommendations from './UserRecommendations'
 
 // Mock data for social feed
 const mockFeedData = [
@@ -294,6 +294,12 @@ const FloatingSocialFeed: React.FC<FloatingSocialFeedProps> = ({ isOpen, onClose
             {/* Sidebar */}
             <div className="w-80 border-l border-gray-200 bg-gray-50 p-4 overflow-y-auto">
               <div className="space-y-4">
+                {/* User Recommendations */}
+                <UserRecommendations 
+                  onFollow={(userId) => console.log('Follow user:', userId)}
+                  className="mb-4"
+                />
+
                 {/* Trending Topics */}
                 <Card className="border-0 shadow-sm">
                   <CardHeader className="pb-3">
@@ -315,32 +321,6 @@ const FloatingSocialFeed: React.FC<FloatingSocialFeedProps> = ({ isOpen, onClose
                           </Badge>
                         </div>
                       ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Community Stats */}
-                <Card className="border-0 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center space-x-2 text-sm">
-                      <Users className="h-4 w-4 text-blue-500" />
-                      <span>Community</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-600">Active Users</span>
-                        <span className="font-semibold text-blue-600">1,234</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-600">Projects Created</span>
-                        <span className="font-semibold text-green-600">5,678</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-600">This Week</span>
-                        <span className="font-semibold text-purple-600">234</span>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>

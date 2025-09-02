@@ -16,7 +16,6 @@ import {
   Github,
   Twitter,
   Linkedin,
-  Award,
   TrendingUp
 } from 'lucide-react'
 import { format } from 'date-fns'
@@ -25,6 +24,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '../features/shared/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../features/shared/components/ui/tabs'
+import AchievementSystem from '../components/AchievementSystem'
+import UserRecommendations from '../components/UserRecommendations'
 
 // Mock user data
 const mockUserProfile = {
@@ -340,40 +341,31 @@ const Profile: React.FC = () => {
 
           {/* Achievements Tab */}
           <TabsContent value="achievements" className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-800">Achievements ({mockUserProfile.achievements.length})</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mockUserProfile.achievements.map((achievement) => (
-                <Card key={achievement.id} className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-4xl">{achievement.icon}</div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-slate-800">{achievement.name}</h3>
-                        <p className="text-sm text-slate-600 mb-2">{achievement.description}</p>
-                        <p className="text-xs text-slate-500">
-                          Earned on {format(new Date(achievement.earned), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <Award className="h-6 w-6 text-yellow-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <AchievementSystem />
           </TabsContent>
 
           {/* Activity Tab */}
           <TabsContent value="activity" className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-800">Recent Activity</h2>
-            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="text-center py-12">
-                  <TrendingUp className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-600 mb-2">Activity Coming Soon</h3>
-                  <p className="text-slate-500">Track your project updates, likes, and community interactions here.</p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6">Recent Activity</h2>
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="text-center py-12">
+                      <TrendingUp className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-slate-600 mb-2">Activity Coming Soon</h3>
+                      <p className="text-slate-500">Track your project updates, likes, and community interactions here.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="lg:col-span-1">
+                <UserRecommendations 
+                  onFollow={(userId) => console.log('Follow user:', userId)}
+                />
+              </div>
+            </div>
           </TabsContent>
 
           {/* About Tab */}
