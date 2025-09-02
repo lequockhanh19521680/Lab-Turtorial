@@ -12,7 +12,7 @@
     "deploy:dev": "npm run build && sam build && sam deploy --config-file samconfig.dev.toml --resolve-s3",
     "deploy:prod": "npm run build && sam build && sam deploy --config-file samconfig.prod.toml --resolve-s3",
     "test": "jest",
-    "dev": "sam local start-api --warm-containers LAZY"
+    "dev": "sam local start-api --warm-containers LAZY --port 8080"
   },
   "dependencies": {
     "fs-extra": "^11.3.1"
