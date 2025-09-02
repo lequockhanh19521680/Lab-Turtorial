@@ -3,7 +3,7 @@ import { Users, UserPlus, Star, TrendingUp, Award } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '../features/shared/components/ui/avatar'
 
 interface RecommendedUser {
   id: string
