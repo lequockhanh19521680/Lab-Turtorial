@@ -2,6 +2,9 @@ import { Routes, Route } from 'react-router-dom'
 import Layout from './features/shared/components/Layout'
 import ProtectedRoute from './features/shared/components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
+import Projects from './pages/Projects'
+import SocialFeed from './pages/SocialFeed'
+import Profile from './pages/Profile'
 import ProjectDetail from './pages/ProjectDetail'
 import CreateProject from './pages/CreateProject'
 import Login from './pages/Login'
@@ -23,6 +26,27 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/projects" element={
+          <ProtectedRoute>
+            <Layout>
+              <Projects />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/feed" element={
+          <ProtectedRoute>
+            <Layout>
+              <SocialFeed />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Layout>
+              <Profile />
             </Layout>
           </ProtectedRoute>
         } />

@@ -70,6 +70,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return location.pathname === path
   }
 
+  const getPageTitle = () => {
+    if (location.pathname === '/') return 'Dashboard'
+    if (location.pathname === '/create') return 'Create New Project'
+    if (location.pathname === '/projects') return 'Projects'
+    if (location.pathname === '/feed') return 'Social Feed'
+    if (location.pathname === '/profile') return 'Profile'
+    if (location.pathname === '/settings') return 'Settings'
+    if (location.pathname.startsWith('/project')) return 'Project Details'
+    return 'Agent Builder'
+  }
+
   const handleLogout = async () => {
     await authService.signOut()
     navigate('/login')
@@ -138,9 +149,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </Button>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">
-                  {location.pathname === '/' && 'Dashboard'}
-                  {location.pathname === '/create' && 'Create New Project'}
-                  {location.pathname.startsWith('/project') && 'Project Details'}
+                  {getPageTitle()}
                 </h1>
               </div>
             </div>
