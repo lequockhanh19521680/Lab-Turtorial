@@ -2,6 +2,8 @@ import { Routes, Route } from 'react-router-dom'
 import Layout from './features/shared/components/Layout'
 import ProtectedRoute from './features/shared/components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
+import EnhancedDashboard from './pages/EnhancedDashboard'
+import TemplatesPage from './pages/TemplatesPage'
 import Projects from './pages/Projects'
 import SocialFeed from './pages/SocialFeed'
 import Profile from './pages/Profile'
@@ -25,6 +27,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/showcase" element={<ComponentShowcase />} />
+        <Route path="/demo-dashboard" element={<EnhancedDashboard />} />
+        <Route path="/demo-templates" element={<TemplatesPage />} />
         
         {/* Protected routes */}
         <Route path="/" element={
@@ -38,6 +42,20 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/enhanced-dashboard" element={
+          <ProtectedRoute>
+            <Layout>
+              <EnhancedDashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/templates" element={
+          <ProtectedRoute>
+            <Layout>
+              <TemplatesPage />
             </Layout>
           </ProtectedRoute>
         } />
@@ -94,13 +112,6 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <ProjectDetail />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/admin" element={
-          <ProtectedRoute>
-            <Layout>
-              <Admin />
             </Layout>
           </ProtectedRoute>
         } />

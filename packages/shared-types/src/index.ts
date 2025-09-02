@@ -264,9 +264,9 @@ export interface PaginatedResponse<T> {
   total?: number;
 }
 
-// WebSocket Types
+// Enhanced WebSocket Types for Real-time Dashboard
 export interface WebSocketMessage {
-  type: "PROJECT_UPDATE" | "TASK_UPDATE" | "ARTIFACT_CREATED" | "ERROR";
+  type: "PROJECT_UPDATE" | "TASK_UPDATE" | "ARTIFACT_CREATED" | "AGENT_PROGRESS" | "AGENT_COMMUNICATION" | "ERROR";
   payload: any;
   timestamp: string;
 }
@@ -295,6 +295,30 @@ export interface ArtifactCreatedMessage extends WebSocketMessage {
   payload: {
     projectId: string;
     artifact: Artifact;
+  };
+}
+
+export interface AgentProgressMessage extends WebSocketMessage {
+  type: "AGENT_PROGRESS";
+  payload: {
+    projectId: string;
+    agentType: AgentType;
+    progress: number;
+    currentStep: string;
+    estimatedTimeRemaining?: number;
+    metadata?: Record<string, any>;
+  };
+}
+
+export interface AgentCommunicationMessage extends WebSocketMessage {
+  type: "AGENT_COMMUNICATION";
+  payload: {
+    projectId: string;
+    fromAgent: AgentType;
+    toAgent?: AgentType;
+    message: string;
+    communicationType: "handoff" | "request_input" | "share_output" | "status_update";
+    metadata?: Record<string, any>;
   };
 }
 
@@ -328,6 +352,105 @@ export interface DynamoDBRecord {
 // Utility Types
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+
+// Enhanced Dashboard Types
+export interface AgentWorkflowStatus {
+  agentType: AgentType;
+  status: 'idle' | 'working' | 'completed' | 'failed' | 'waiting';
+  progress: number;
+  currentStep: string;
+  estimatedTimeRemaining?: number;
+  startedAt?: string;
+  completedAt?: string;
+  errorMessage?: string;
+}
+
+export interface ProjectDashboardData {
+  project: Project;
+  agentStatuses: AgentWorkflowStatus[];
+  recentCommunications: AgentCommunicationMessage['payload'][];
+  overallProgress: number;
+  estimatedCompletion?: string;
+}
+
+export interface DashboardAnalytics {
+  totalProjects: number;
+  activeProjects: number;
+  completedProjects: number;
+  failedProjects: number;
+  totalUsers: number;
+  avgCompletionTime: number;
+  successRate: number;
+  trendsData: {
+    period: string;
+    created: number;
+    completed: number;
+    failed: number;
+  }[];
+}
+
+// Template System Types
+export const TemplateCategory = {
+  ECOMMERCE: "ECOMMERCE",
+  BLOG: "BLOG", 
+  API: "API",
+  DASHBOARD: "DASHBOARD",
+  SAAS: "SAAS",
+  MOBILE_APP: "MOBILE_APP",
+  PORTFOLIO: "PORTFOLIO",
+  BUSINESS: "BUSINESS"
+} as const;
+
+export type TemplateCategory = typeof TemplateCategory[keyof typeof TemplateCategory];
+
+export const TemplateCategorySchema = z.enum([
+  'ECOMMERCE',
+  'BLOG',
+  'API', 
+  'DASHBOARD',
+  'SAAS',
+  'MOBILE_APP',
+  'PORTFOLIO',
+  'BUSINESS'
+]);
+
+export const ProjectTemplateSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(100),
+  description: z.string().min(10).max(500),
+  category: TemplateCategorySchema,
+  tags: z.array(z.string()).default([]),
+  thumbnail: z.string().url().optional(),
+  previewImages: z.array(z.string().url()).default([]),
+  techStack: z.array(z.string()).default([]),
+  complexity: z.enum(['beginner', 'intermediate', 'advanced']).default('intermediate'),
+  estimatedTime: z.number().positive(), // in minutes
+  rating: z.number().min(0).max(5).default(0),
+  reviewCount: z.number().min(0).default(0),
+  downloadCount: z.number().min(0).default(0),
+  isPopular: z.boolean().default(false),
+  isFeatured: z.boolean().default(false),
+  template: z.object({
+    projectName: z.string(),
+    requestPrompt: z.string(),
+    customizations: z.record(z.string(), z.any()).optional()
+  }),
+  createdBy: z.string().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+});
+
+export interface ProjectTemplate extends z.infer<typeof ProjectTemplateSchema> {}
+
+export interface TemplateSearchFilters {
+  category?: TemplateCategory;
+  techStack?: string[];
+  complexity?: 'beginner' | 'intermediate' | 'advanced';
+  tags?: string[];
+  searchQuery?: string;
+  sortBy?: 'popularity' | 'rating' | 'newest' | 'name';
+  sortOrder?: 'asc' | 'desc';
+}
 
 // Status Enums for better type safety
 export const ProjectStatus = {
