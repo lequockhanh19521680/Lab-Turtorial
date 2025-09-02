@@ -19,8 +19,8 @@ import {
   TrendingUp,
   Camera,
   Upload,
-  Check,
-  X
+  X,
+  Save
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +28,16 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '../features/shared/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../features/shared/components/ui/tabs'
+import { Input } from '../features/shared/components/ui/input'
+import { Textarea } from '../features/shared/components/ui/textarea'
+import { Label } from '../features/shared/components/ui/label'
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '../features/shared/components/ui/dialog'
 import AchievementSystem from '../components/AchievementSystem'
 import UserRecommendations from '../components/UserRecommendations'
 
@@ -112,8 +122,18 @@ const Profile: React.FC = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [isUploadingCover, setIsUploadingCover] = useState(false)
   const [showAvatarUpload, setShowAvatarUpload] = useState(false)
+  const [showEditProfile, setShowEditProfile] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(mockUserProfile.avatar)
   const [coverPreview, setCoverPreview] = useState(mockUserProfile.coverImage)
+  
+  // Edit profile form state
+  const [editProfile, setEditProfile] = useState({
+    name: mockUserProfile.name,
+    username: mockUserProfile.username,
+    bio: mockUserProfile.bio,
+    location: mockUserProfile.location,
+    website: mockUserProfile.website
+  })
   
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
@@ -192,6 +212,25 @@ const Profile: React.FC = () => {
     } finally {
       setIsUploadingCover(false)
     }
+  }
+
+  const handleEditProfileSave = async () => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      console.log('Profile updated successfully:', editProfile)
+      setShowEditProfile(false)
+    } catch (error) {
+      console.error('Failed to update profile:', error)
+    }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setEditProfile(prev => ({
+      ...prev,
+      [field]: value
+    }))
   }
 
   const getStatusBadge = (status: string) => {
@@ -302,6 +341,7 @@ const Profile: React.FC = () => {
                 </Button>
                 <Button 
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                  onClick={() => setShowEditProfile(true)}
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
@@ -602,6 +642,85 @@ const Profile: React.FC = () => {
             </Card>
           </div>
         )}
+
+        {/* Edit Profile Modal */}
+        <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Profile</DialogTitle>
+              <DialogDescription>
+                Make changes to your profile here. Click save when you're done.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={editProfile.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="username" className="text-right">
+                  Username
+                </Label>
+                <Input
+                  id="username"
+                  value={editProfile.username}
+                  onChange={(e) => handleInputChange('username', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="location" className="text-right">
+                  Location
+                </Label>
+                <Input
+                  id="location"
+                  value={editProfile.location}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="website" className="text-right">
+                  Website
+                </Label>
+                <Input
+                  id="website"
+                  value={editProfile.website}
+                  onChange={(e) => handleInputChange('website', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="bio" className="text-right">
+                  Bio
+                </Label>
+                <Textarea
+                  id="bio"
+                  value={editProfile.bio}
+                  onChange={(e) => handleInputChange('bio', e.target.value)}
+                  className="col-span-3"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowEditProfile(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditProfileSave}>
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
