@@ -10,7 +10,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation()
   const isAuthenticated = authService.isAuthenticated()
 
-  if (!isAuthenticated) {
+  // Temporary bypass for development - remove this in production
+  const isDevelopment = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_API === 'true'
+  
+  if (!isAuthenticated && !isDevelopment) {
     // Redirect to login page with return url
     return <Navigate to="/login" state={{ from: location }} replace />
   }
