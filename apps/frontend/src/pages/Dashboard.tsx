@@ -61,11 +61,11 @@ const Dashboard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-8 p-6 bg-gradient-to-br from-slate-50 via-white to-blue-50 min-h-screen">
+      <div className="space-y-8 p-6 bg-gradient-to-br from-background via-background to-secondary min-h-screen">
         {/* Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl animate-pulse-slow"></div>
-          <div className="absolute bottom-20 left-20 w-48 h-48 bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute bottom-20 left-20 w-48 h-48 bg-gradient-to-br from-accent/10 to-primary/10 rounded-full blur-3xl animate-float"></div>
         </div>
 
         <div className="relative z-10 space-y-8">
@@ -131,21 +131,21 @@ const Dashboard: React.FC = () => {
   const displayProjects = projectsData || projects
 
   return (
-    <div className="space-y-8 p-6 bg-gradient-to-br from-slate-50 via-white to-blue-50 min-h-screen">
+    <div className="space-y-8 p-6 bg-gradient-to-br from-background via-background to-secondary min-h-screen">
       {/* Modern Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute bottom-20 left-20 w-48 h-48 bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute bottom-20 left-20 w-48 h-48 bg-gradient-to-br from-accent/10 to-primary/10 rounded-full blur-3xl animate-float"></div>
       </div>
 
       <div className="relative z-10 space-y-8">
         {/* Enhanced Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
               Dashboard
             </h1>
-            <p className="text-slate-600 text-lg">Manage your AI-generated projects with ease</p>
+            <p className="text-muted-foreground text-lg">Manage your AI-generated projects with ease</p>
           </div>
           <Button 
             asChild 

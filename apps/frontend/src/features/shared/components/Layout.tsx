@@ -71,15 +71,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-border">
           <div className="flex items-center space-x-2">
-            <Zap className="h-8 w-8 text-primary-600" />
-            <span className="text-xl font-bold text-gray-900">Agent Builder</span>
+            <Zap className="h-8 w-8 text-primary" />
+            <span className="text-xl font-bold text-card-foreground">Agent Builder</span>
           </div>
           <Button
             variant="ghost"
@@ -103,8 +103,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     to={item.href}
                     className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive
-                        ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-primary/10 text-primary border-r-2 border-primary'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     }`}
                   >
                     <Icon className="h-5 w-5" />
@@ -120,7 +120,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className={`flex-1 flex flex-col ${sidebarOpen ? '' : 'lg:ml-64'}`}>
         {/* Top bar */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header className="bg-card shadow-sm border-b border-border">
           <div className="flex items-center justify-between h-16 px-6">
             <div className="flex items-center space-x-4">
               <Button
@@ -132,7 +132,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Menu className="h-6 w-6" />
               </Button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-card-foreground">
                   {location.pathname === '/' && 'Dashboard'}
                   {location.pathname === '/create' && 'Create New Project'}
                   {location.pathname.startsWith('/project') && 'Project Details'}

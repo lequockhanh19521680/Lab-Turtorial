@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ["class"],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -90,19 +91,40 @@ export default {
           900: '#7f1d1d',
           950: '#450a0a',
         },
-        // Semantic colors for better UX
-        background: {
-          DEFAULT: 'hsl(0 0% 100%)',
-          secondary: 'hsl(210 40% 98%)',
-          muted: 'hsl(210 40% 96%)',
+        // Semantic colors using CSS variables for theme support
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
-        foreground: {
-          DEFAULT: 'hsl(222.2 84% 4.9%)',
-          muted: 'hsl(215.4 16.3% 46.9%)',
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
         },
-        border: 'hsl(214.3 31.8% 91.4%)',
-        input: 'hsl(214.3 31.8% 91.4%)',
-        ring: 'hsl(221.2 83.2% 53.3%)',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
       },
       borderRadius: {
         lg: '0.5rem',
