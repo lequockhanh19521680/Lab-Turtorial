@@ -53,13 +53,11 @@ const DragDropUpload: React.FC<DragDropUploadProps> = ({
     return <File className="h-8 w-8 text-gray-500" />
   }
 
-  const formatFileSize = (bytes: number): string => {
+  const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
-    
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
@@ -69,18 +67,16 @@ const DragDropUpload: React.FC<DragDropUploadProps> = ({
       return `File size must be less than ${maxFileSize}MB`
     }
 
-    // Check file type if specified
-    if (acceptedTypes.length > 0) {
-      const isAccepted = acceptedTypes.some(type => {
-        if (type.startsWith('.')) {
-          return file.name.toLowerCase().endsWith(type.toLowerCase())
-        }
-        return file.type.match(type.replace('*', '.*'))
-      })
-      
-      if (!isAccepted) {
-        return `File type not accepted. Allowed: ${acceptedTypes.join(', ')}`
+    // Check file type
+    const isValidType = acceptedTypes.some(type => {
+      if (type.startsWith('.')) {
+        return file.name.toLowerCase().endsWith(type)
       }
+      return file.type.match(type)
+    })
+
+    if (!isValidType) {
+      return `File type not supported. Accepted types: ${acceptedTypes.join(', ')}`
     }
 
     return null
@@ -184,44 +180,78 @@ const DragDropUpload: React.FC<DragDropUploadProps> = ({
       onFilesUpload(validFiles, s3Files.length > 0 ? s3Files : undefined)
     }
   }, [uploadedFiles.length, maxFiles, maxFileSize, acceptedTypes, onFilesUpload, showPreview, uploadOptions])
+    for (const uploadedFile of newUploadedFiles) {
+      simulateUpload(uploadedFile.id)
+    }
+
+    if (onFilesUpload && validFiles.length > 0) {
+      onFilesUpload(validFiles)
+    }
+  }, [uploadedFiles.length, maxFiles, maxFileSize, acceptedTypes, onFilesUpload, showPreview])
+
+  const simulateUpload = (fileId: string) => {
+    const interval = setInterval(() => {
+      setUploadedFiles(prev => prev.map(file => {
+        if (file.id === fileId) {
+          const newProgress = Math.min(file.progress + Math.random() * 30, 100)
+          const status = newProgress >= 100 ? 'completed' : 'uploading'
+          return { ...file, progress: newProgress, status }
+        }
+        return file
+      }))
+    }, 200)
+
+    setTimeout(() => {
+      clearInterval(interval)
+      setUploadedFiles(prev => prev.map(file => {
+        if (file.id === fileId) {
+          return { ...file, progress: 100, status: 'completed' }
+        }
+        return file
+      }))
+    }, 2000 + Math.random() * 2000)
+  }
 
   const removeFile = (fileId: string) => {
     setUploadedFiles(prev => prev.filter(file => file.id !== fileId))
   }
 
-  const handleDragEnter = (e: React.DragEvent) => {
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(true)
-  }
+  }, [])
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.currentTarget === e.target) {
+      setIsDragging(false)
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
-  }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    
     const files = e.dataTransfer.files
-    if (files && files.length > 0) {
+    if (files?.length > 0) {
       processFiles(files)
     }
-  }
+  }, [processFiles])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (files && files.length > 0) {
+    if (files?.length > 0) {
       processFiles(files)
     }
-    // Reset input value to allow re-selecting the same file
+    // Reset input value to allow selecting the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -233,12 +263,12 @@ const DragDropUpload: React.FC<DragDropUploadProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Upload Area */}
+      {/* Drop Zone */}
       <Card
-        className={`border-2 border-dashed transition-colors cursor-pointer ${
+        className={`relative border-2 border-dashed transition-all duration-200 cursor-pointer ${
           isDragging
-            ? 'border-primary-500 bg-primary-50'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-primary bg-primary/5 scale-105'
+            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
         }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -247,76 +277,83 @@ const DragDropUpload: React.FC<DragDropUploadProps> = ({
         onClick={handleClick}
       >
         <div className="p-8 text-center">
-          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Upload files
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 transition-all duration-200 ${
+            isDragging ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+          }`}>
+            <Upload className="h-8 w-8" />
+          </div>
+          
+          <h3 className="text-lg font-semibold mb-2">
+            {isDragging ? 'Drop files here' : 'Upload files'}
           </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Drag and drop files here or click to browse
+          
+          <p className="text-muted-foreground mb-4">
+            Drag and drop files here, or{' '}
+            <span className="text-primary font-medium">click to browse</span>
           </p>
-          <p className="text-xs text-gray-500">
-            Max {maxFiles} files, {maxFileSize}MB each
-          </p>
-          {acceptedTypes.length > 0 && (
-            <p className="text-xs text-gray-500 mt-1">
-              Accepted: {acceptedTypes.join(', ')}
-            </p>
-          )}
+          
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p>Supported formats: {acceptedTypes.join(', ')}</p>
+            <p>Maximum file size: {maxFileSize}MB</p>
+            <p>Maximum {maxFiles} files</p>
+          </div>
         </div>
-      </Card>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept={acceptedTypes.join(',')}
-        onChange={handleFileSelect}
-        className="hidden"
-      />
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={acceptedTypes.join(',')}
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </Card>
 
       {/* Error Message */}
       {error && (
-        <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
-          <AlertCircle className="h-4 w-4 text-red-500" />
-          <span className="text-sm text-red-700">{error}</span>
+        <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <span className="text-sm">{error}</span>
         </div>
       )}
 
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-900">Files</h4>
-          {uploadedFiles.map((uploadedFile) => (
-            <Card key={uploadedFile.id} className="p-4">
-              <div className="flex items-center space-x-4">
-                {/* File Icon or Preview */}
+        <Card className="p-4">
+          <h4 className="font-semibold mb-4 flex items-center space-x-2">
+            <File className="h-5 w-5" />
+            <span>Uploaded Files ({uploadedFiles.length})</span>
+          </h4>
+          
+          <div className="space-y-3">
+            {uploadedFiles.map((uploadedFile) => (
+              <div
+                key={uploadedFile.id}
+                className="flex items-center space-x-4 p-3 bg-muted/30 rounded-lg border border-border"
+              >
+                {/* File Icon/Preview */}
                 <div className="flex-shrink-0">
                   {uploadedFile.preview ? (
-                    <img 
-                      src={uploadedFile.preview} 
+                    <img
+                      src={uploadedFile.preview}
                       alt={uploadedFile.file.name}
-                      className="h-12 w-12 object-cover rounded"
+                      className="w-12 h-12 object-cover rounded-lg"
                     />
                   ) : (
-                    getFileIcon(uploadedFile.file)
+                    <div className="w-12 h-12 flex items-center justify-center">
+                      {getFileIcon(uploadedFile.file)}
+                    </div>
                   )}
                 </div>
 
                 {/* File Info */}
                 <div className="flex-1 min-w-0">
-                  <h5 className="text-sm font-medium text-gray-900 truncate">
+                  <p className="font-medium text-sm truncate">
                     {uploadedFile.file.name}
-                  </h5>
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {formatFileSize(uploadedFile.file.size)}
                   </p>
-                  
-                  {/* S3 Info */}
-                  {uploadedFile.s3Info && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Uploaded to: {uploadedFile.s3Info.key}
-                    </p>
-                  )}
                   
                   {/* Progress Bar */}
                   {uploadedFile.status === 'uploading' && (
@@ -340,35 +377,49 @@ const DragDropUpload: React.FC<DragDropUploadProps> = ({
                       Complete
                     </Badge>
                   )}
+                  {uploadedFile.status === 'uploading' && (
+                    <Badge className="bg-blue-100 text-blue-700 animate-pulse">
+                      Uploading...
+                    </Badge>
+                  )}
                   {uploadedFile.status === 'error' && (
                     <Badge className="bg-red-100 text-red-700">
                       <AlertCircle className="h-3 w-3 mr-1" />
                       Error
                     </Badge>
                   )}
-                  {uploadedFile.status === 'uploading' && (
-                    <Badge className="bg-blue-100 text-blue-700 animate-pulse">
-                      Uploading...
-                    </Badge>
-                  )}
-
-                  {/* Remove Button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removeFile(uploadedFile.id)
-                    }}
-                    className="h-8 w-8"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
                 </div>
+
+                {/* Remove Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeFile(uploadedFile.id)
+                  }}
+                  className="p-1 h-8 w-8 text-muted-foreground hover:text-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* Clear All Button */}
+          {uploadedFiles.length > 0 && (
+            <div className="flex justify-end mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setUploadedFiles([])}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                Clear All
+              </Button>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   )
