@@ -7,7 +7,6 @@ import { authService } from '../../../services/auth'
 import { 
   Menu, 
   X, 
-  Home, 
   Plus, 
   Settings, 
   User, 
@@ -20,7 +19,8 @@ import {
   FolderOpen,
   Search,
   Users,
-  MessageSquare
+  MessageSquare,
+  Home
 } from 'lucide-react'
 import { Button } from './ui/button'
 import {
@@ -61,12 +61,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [])
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
+    { name: 'Social Feed', href: '/', icon: Users },
     { name: 'Create Project', href: '/create', icon: Plus },
     { name: 'Projects', href: '/projects', icon: FolderOpen },
-    { name: 'Social Feed', href: '/feed', icon: Users },
-    { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
   const isActivePath = (path: string) => {
@@ -74,10 +71,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   const getPageTitle = () => {
-    if (location.pathname === '/') return 'Dashboard'
+    if (location.pathname === '/') return 'Social Feed'
+    if (location.pathname === '/dashboard') return 'Dashboard'
     if (location.pathname === '/create') return 'Create New Project'
     if (location.pathname === '/projects') return 'Projects'
-    if (location.pathname === '/feed') return 'Social Feed'
     if (location.pathname === '/profile') return 'Profile'
     if (location.pathname === '/settings') return 'Settings'
     if (location.pathname === '/feedback') return 'Feedback'
@@ -214,6 +211,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </p>
                     </div>
                   </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  {/* User menu options */}
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    <Home className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  
                   <DropdownMenuSeparator />
                   
                   {/* Theme selector */}

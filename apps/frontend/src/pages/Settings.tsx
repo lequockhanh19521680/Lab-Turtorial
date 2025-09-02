@@ -27,7 +27,8 @@ import {
   toggleNotification, 
   togglePrivacySetting,
   saveSettingsToStorage,
-  loadSettingsFromStorage
+  loadSettingsFromStorage,
+  updateAppearance
 } from '../store/slices/settingsSlice'
 
 const Settings: React.FC = () => {
@@ -227,11 +228,11 @@ const Settings: React.FC = () => {
                       <Button 
                         variant={settings.appearance.theme === 'system' ? 'default' : 'outline'} 
                         size="sm"
-                        onClick={() => dispatch(setTheme('system'))}
+                        onClick={() => dispatch(updateAppearance({ theme: 'light' }))}
                         className="flex items-center space-x-1"
                       >
                         <Monitor className="h-4 w-4" />
-                        <span>System</span>
+                        <span>Auto</span>
                       </Button>
                     </div>
                   </div>

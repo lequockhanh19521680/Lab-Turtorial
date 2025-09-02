@@ -39,7 +39,7 @@ const Login: React.FC = () => {
 
     try {
       await authService.signIn(data)
-      navigate('/')
+      navigate('/feed')
     } catch (error: any) {
       setError(error.message)
     } finally {
