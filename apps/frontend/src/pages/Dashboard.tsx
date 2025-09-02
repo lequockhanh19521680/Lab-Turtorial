@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '../features/shared/components/ui/skeleton'
+import DashboardAnalytics from '../components/DashboardAnalytics'
 import {
   Table,
   TableBody,
@@ -228,6 +229,9 @@ const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Dashboard Analytics Section */}
+        <DashboardAnalytics />
 
         {/* Enhanced Projects Table */}
         <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
