@@ -1,12 +1,13 @@
 import { Routes, Route } from 'react-router-dom'
-import Layout from './components/Layout'
-import ProtectedRoute from './components/ProtectedRoute'
-import EnhancedDashboard from './pages/EnhancedDashboard'
+import Layout from './features/shared/components/Layout'
+import ProtectedRoute from './features/shared/components/ProtectedRoute'
+import Dashboard from './pages/Dashboard'
 import ProjectDetail from './pages/ProjectDetail'
 import CreateProject from './pages/CreateProject'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import AuthCallback from './pages/AuthCallback'
+import { Toaster } from './features/shared/components/ui/toaster'
 
 function App() {
   return (
@@ -21,7 +22,7 @@ function App() {
         <Route path="/" element={
           <ProtectedRoute>
             <Layout>
-              <EnhancedDashboard />
+              <Dashboard />
             </Layout>
           </ProtectedRoute>
         } />
@@ -40,6 +41,7 @@ function App() {
           </ProtectedRoute>
         } />
       </Routes>
+      <Toaster />
     </div>
   )
 }

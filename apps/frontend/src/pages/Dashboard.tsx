@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '../features/shared/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -60,10 +61,58 @@ const Dashboard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-600 animate-ping"></div>
+      <div className="space-y-8 p-6 bg-gradient-to-br from-slate-50 via-white to-blue-50 min-h-screen">
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute bottom-20 left-20 w-48 h-48 bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-full blur-3xl animate-float"></div>
+        </div>
+
+        <div className="relative z-10 space-y-8">
+          {/* Header Skeleton */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-6 w-96" />
+            </div>
+            <Skeleton className="h-12 w-32" />
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="border-0 shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-12 mb-2" />
+                  <Skeleton className="h-4 w-24" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Table Skeleton */}
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-80" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-6 w-20" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )

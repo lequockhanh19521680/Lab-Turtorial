@@ -102,8 +102,8 @@ const Login: React.FC = () => {
 
         {/* Right Column - Modern Login Form */}
         <div className="lg:flex lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center relative">
-          <div className="max-w-md mx-auto lg:mx-0 w-full animate-fade-in-up">
-            <Card className="border-0 shadow-2xl shadow-slate-200/50 bg-white/80 backdrop-blur-xl">
+          <div className="max-w-md mx-auto lg:ml-8 lg:mr-0 w-full animate-fade-in-up">
+            <Card className="border-0 shadow-2xl shadow-slate-200/50 bg-white/90 backdrop-blur-xl ring-1 ring-white/20">
               <CardHeader className="space-y-2 text-center lg:text-left pb-8">
                 <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
                   Welcome back

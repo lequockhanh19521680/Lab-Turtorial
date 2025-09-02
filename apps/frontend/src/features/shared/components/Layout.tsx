@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { RootState } from '../store'
-import { toggleSidebar } from '../store/slices/uiSlice'
-import { authService } from '../services/auth'
+import { RootState } from '../../../store'
+import { toggleSidebar } from '../../../store/slices/uiSlice'
+import { authService } from '../../../services/auth'
 import { 
   Menu, 
   X, 
@@ -18,7 +18,7 @@ import {
   Monitor,
   ChevronDown
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from './ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from './ui/dropdown-menu'
 import NotificationCenter from './NotificationCenter'
 import { useTheme } from '@/hooks/use-theme'
 
