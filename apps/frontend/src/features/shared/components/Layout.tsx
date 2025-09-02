@@ -16,7 +16,9 @@ import {
   Moon,
   Sun,
   Monitor,
-  ChevronDown
+  ChevronDown,
+  FolderOpen,
+  Search
 } from 'lucide-react'
 import { Button } from './ui/button'
 import {
@@ -29,6 +31,7 @@ import {
 } from './ui/dropdown-menu'
 import NotificationCenter from './NotificationCenter'
 import { useTheme } from '@/hooks/use-theme'
+import FloatingSocialButton from '../../../components/FloatingSocialButton'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -58,11 +61,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Create Project', href: '/create', icon: Plus },
+    { name: 'Projects', href: '/projects', icon: FolderOpen },
+    { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
   const isActivePath = (path: string) => {
     return location.pathname === path
+  }
+
+  const getPageTitle = () => {
+    if (location.pathname === '/') return 'Dashboard'
+    if (location.pathname === '/create') return 'Create New Project'
+    if (location.pathname === '/projects') return 'Projects'
+    if (location.pathname === '/profile') return 'Profile'
+    if (location.pathname === '/settings') return 'Settings'
+    if (location.pathname.startsWith('/project')) return 'Project Details'
+    return 'Agent Builder'
   }
 
   const handleLogout = async () => {
@@ -71,11 +86,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0`}>
+      } lg:translate-x-0 lg:static lg:inset-0 lg:flex lg:flex-col`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-border">
           <div className="flex items-center space-x-2">
             <Zap className="h-8 w-8 text-primary" />
@@ -91,7 +106,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Button>
         </div>
         
-        <nav className="mt-6 px-6">
+        <nav className="mt-6 px-6 flex-1">
           <ul className="space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon
@@ -118,7 +133,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col ${sidebarOpen ? '' : 'lg:ml-64'}`}>
+      <div className="flex-1 flex flex-col lg:ml-0">
         {/* Top bar */}
         <header className="bg-card shadow-sm border-b border-border">
           <div className="flex items-center justify-between h-16 px-6">
@@ -133,15 +148,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </Button>
               <div>
                 <h1 className="text-xl font-semibold text-card-foreground">
-                  {location.pathname === '/' && 'Dashboard'}
-                  {location.pathname === '/create' && 'Create New Project'}
-                  {location.pathname.startsWith('/project') && 'Project Details'}
+                  {getPageTitle()}
                 </h1>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
               <NotificationCenter />
+              
+              {/* Search functionality */}
+              <div className="hidden md:flex relative">
+                <input
+                  type="text"
+                  placeholder="Search projects..."
+                  className="pl-4 pr-10 py-2 w-64 text-sm border border-border rounded-lg bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                />
+                <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              </div>
               
               {/* User dropdown */}
               <DropdownMenu>
@@ -210,6 +233,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           onClick={() => dispatch(toggleSidebar())}
         />
       )}
+
+      {/* Floating Social Button */}
+      <FloatingSocialButton />
     </div>
   )
 }
