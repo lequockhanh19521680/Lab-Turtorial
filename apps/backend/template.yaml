@@ -33,6 +33,12 @@ Globals:
         PROJECTS_TABLE: !Ref ProjectsTable
         TASKS_TABLE: !Ref TasksTable
         ARTIFACTS_TABLE: !Ref ArtifactsTable
+        SOCIAL_INTERACTIONS_TABLE: !Ref SocialInteractionsTable
+        USER_RELATIONSHIPS_TABLE: !Ref UserRelationshipsTable
+        NOTIFICATIONS_TABLE: !Ref NotificationsTable
+        USER_ACTIVITIES_TABLE: !Ref UserActivitiesTable
+        ACHIEVEMENTS_TABLE: !Ref AchievementsTable
+        BLOGS_TABLE: !Ref BlogsTable
         ARTIFACTS_BUCKET: !Ref ArtifactsBucket
         AGENT_TASK_QUEUE_URL: !Ref AgentTaskQueue
         PROJECT_NOTIFICATION_TOPIC_ARN: !Ref ProjectNotificationTopic
@@ -40,6 +46,8 @@ Globals:
         CONNECTIONS_TABLE: !Ref ConnectionsTable
         GOOGLE_CLIENT_ID_PARAM: !Sub /agent-builder/${Environment}/google-oauth-client-id
         GOOGLE_CLIENT_SECRET_PARAM: !Sub /agent-builder/${Environment}/google-oauth-client-secret
+        FACEBOOK_CLIENT_ID_PARAM: !Sub /agent-builder/${Environment}/facebook-oauth-client-id
+        FACEBOOK_CLIENT_SECRET_PARAM: !Sub /agent-builder/${Environment}/facebook-oauth-client-secret
         OPENAI_API_KEY_PARAM: !Sub /agent-builder/${Environment}/openai-api-key
 
 Parameters:
@@ -215,12 +223,205 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SocialInteractionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserRelationshipsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NotificationsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserActivitiesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AchievementsTable
         - Statement:
             - Effect: Allow
               Action:
                 - ssm:GetParameter
                 - ssm:GetParameters
               Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/agent-builder/${Environment}/*
+
+  # Social Features Function
+  SocialFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/social/
+      Handler: index.handler
+      Events:
+        GetSocialFeed:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /social/feed
+            Method: get
+        LikeProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /social/like
+            Method: post
+        CommentProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /social/comment
+            Method: post
+        ShareProject:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /social/share
+            Method: post
+        FollowUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /social/follow
+            Method: post
+        UnfollowUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /social/unfollow
+            Method: post
+        GetUserFollowers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /social/followers/{userId}
+            Method: get
+        GetUserFollowing:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /social/following/{userId}
+            Method: get
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SocialInteractionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserRelationshipsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NotificationsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserActivitiesTable
+
+  # Notifications Function
+  NotificationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/notifications/
+      Handler: index.handler
+      Events:
+        GetNotifications:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /notifications
+            Method: get
+        MarkAsRead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /notifications/{id}/read
+            Method: patch
+        CreateNotification:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /notifications
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NotificationsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConnectionsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi.ApiId}/*
+
+  # Achievements Function
+  AchievementsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/achievements/
+      Handler: index.handler
+      Events:
+        GetUserAchievements:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /achievements/{userId}
+            Method: get
+        GrantAchievement:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /achievements
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AchievementsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NotificationsTable
+
+  # Blog Function
+  BlogFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/handlers/blog/
+      Handler: index.handler
+      Events:
+        GetBlogs:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /blogs
+            Method: get
+        CreateBlog:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /blogs
+            Method: post
+        GetBlog:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /blogs/{id}
+            Method: get
+        UpdateBlog:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /blogs/{id}
+            Method: patch
+        DeleteBlog:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /blogs/{id}
+            Method: delete
+        PublishBlog:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AgentBuilderApi
+            Path: /blogs/{id}/publish
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BlogsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserActivitiesTable
 
   ProjectsFunction:
     Type: AWS::Serverless::Function
@@ -504,6 +705,198 @@ Resources:
         AttributeName: ttl
         Enabled: true
 
+  # Social Interactions Table (likes, comments, shares, views)
+  SocialInteractionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub agent-builder-social-interactions-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: interactionId
+          AttributeType: S
+        - AttributeName: targetId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: targetType
+          AttributeType: S
+      KeySchema:
+        - AttributeName: interactionId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: TargetIndex
+          KeySchema:
+            - AttributeName: targetId
+              KeyType: HASH
+            - AttributeName: targetType
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # User Relationships Table (following/followers)
+  UserRelationshipsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub agent-builder-user-relationships-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: followerId
+          AttributeType: S
+        - AttributeName: followingId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: followerId
+          KeyType: HASH
+        - AttributeName: followingId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: FollowingIndex
+          KeySchema:
+            - AttributeName: followingId
+              KeyType: HASH
+            - AttributeName: followerId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # Notifications Table
+  NotificationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub agent-builder-notifications-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: notificationId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: notificationId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserTimeIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # User Activities Table (activity feed)
+  UserActivitiesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub agent-builder-user-activities-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: activityId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: activityId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserTimeIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # Achievements Table
+  AchievementsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub agent-builder-achievements-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: achievementId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: achievementType
+          AttributeType: S
+      KeySchema:
+        - AttributeName: achievementId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: achievementType
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # Blogs Table
+  BlogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub agent-builder-blogs-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: blogId
+          AttributeType: S
+        - AttributeName: authorId
+          AttributeType: S
+        - AttributeName: publishedAt
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: blogId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: AuthorIndex
+          KeySchema:
+            - AttributeName: authorId
+              KeyType: HASH
+            - AttributeName: publishedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: StatusIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: publishedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
   # S3 Bucket for artifacts
   ArtifactsBucket:
     Type: AWS::S3::Bucket
@@ -559,6 +952,8 @@ Resources:
         - ALLOW_REFRESH_TOKEN_AUTH
       SupportedIdentityProviders:
         - COGNITO
+        # - Google
+        # - Facebook
       CallbackURLs:
         - !Sub https://${Environment}-agent-builder.app/auth/callback
         - http://localhost:3000/auth/callback
@@ -591,6 +986,24 @@ Resources:
   #       given_name: given_name
   #       family_name: family_name
   #       username: sub
+
+  # Facebook Identity Provider
+  # FacebookIdentityProvider:
+  #   Type: AWS::Cognito::UserPoolIdentityProvider
+  #   DependsOn: UserPool
+  #   Properties:
+  #     UserPoolId: !Ref UserPool
+  #     ProviderName: Facebook
+  #     ProviderType: Facebook
+  #     ProviderDetails:
+  #       client_id: "{{resolve:ssm:/agent-builder/${Environment}/facebook-oauth-client-id}}"
+  #       client_secret: "{{resolve:ssm:/agent-builder/${Environment}/facebook-oauth-client-secret}}"
+  #       authorize_scopes: email,public_profile
+  #     AttributeMapping:
+  #       email: email
+  #       given_name: first_name
+  #       family_name: last_name
+  #       username: id
 
   # User Pool Domain for OAuth flows
   UserPoolDomain:

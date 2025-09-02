@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { authService } from '../services/auth'
 import { Mail, Lock, LogIn, AlertCircle, Zap } from 'lucide-react'
+import FacebookLogin from '../components/FacebookLogin'
 
 // Shadcn UI Components
 import { Button } from '@/components/ui/button'
@@ -206,6 +207,12 @@ const Login: React.FC = () => {
                   </svg>
                   Continue with Google
                 </Button>
+
+                <FacebookLogin 
+                  onSuccess={() => navigate('/')}
+                  onError={(error) => setError(error.message)}
+                  className="h-12 rounded-xl font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-sm hover:shadow-md"
+                />
 
                 <div className="text-center">
                   <span className="text-slate-600">Don&apos;t have an account? </span>

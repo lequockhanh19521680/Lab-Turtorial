@@ -332,5 +332,62 @@ export const authService = {
   signInWithGoogle: (): void => {
     const urls = authService.getOAuthUrls()
     window.location.href = urls.google
+  },
+
+  // Sign in with Facebook using access token
+  signInWithFacebook: async (facebookAccessToken: string): Promise<AuthResponse> => {
+    if (USE_MOCK_API) {
+      // For mock API, create a mock response
+      const mockUser = {
+        id: 'facebook-user-' + Date.now(),
+        email: 'facebook.user@example.com',
+        firstName: 'Facebook',
+        lastName: 'User'
+      }
+
+      const authResponse: AuthResponse = {
+        accessToken: 'mock-facebook-token',
+        idToken: 'mock-facebook-id-token',
+        refreshToken: 'mock-facebook-refresh-token',
+        user: mockUser
+      }
+
+      // Store tokens in localStorage
+      localStorage.setItem('authToken', authResponse.accessToken)
+      localStorage.setItem('idToken', authResponse.idToken)
+      localStorage.setItem('refreshToken', authResponse.refreshToken)
+      localStorage.setItem('user', JSON.stringify(authResponse.user))
+
+      return authResponse
+    }
+
+    try {
+      // In a real implementation, you would send the Facebook access token
+      // to your backend to verify it with Facebook and create/get a Cognito user
+      const response = await fetch('/api/auth/facebook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accessToken: facebookAccessToken })
+      })
+
+      if (!response.ok) {
+        throw new Error('Facebook authentication failed')
+      }
+
+      const authResponse: AuthResponse = await response.json()
+
+      // Store tokens in localStorage
+      localStorage.setItem('authToken', authResponse.accessToken)
+      localStorage.setItem('idToken', authResponse.idToken)
+      localStorage.setItem('refreshToken', authResponse.refreshToken)
+      localStorage.setItem('user', JSON.stringify(authResponse.user))
+
+      return authResponse
+    } catch (error: any) {
+      console.error('Facebook sign in error:', error)
+      throw new Error(error.message || 'Facebook sign in failed')
+    }
   }
 }

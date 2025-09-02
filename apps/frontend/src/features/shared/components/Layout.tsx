@@ -18,7 +18,6 @@ import {
   Monitor,
   ChevronDown,
   FolderOpen,
-  Users,
   Search
 } from 'lucide-react'
 import { Button } from './ui/button'
@@ -32,6 +31,7 @@ import {
 } from './ui/dropdown-menu'
 import NotificationCenter from './NotificationCenter'
 import { useTheme } from '@/hooks/use-theme'
+import FloatingSocialButton from '../../../components/FloatingSocialButton'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -62,7 +62,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Create Project', href: '/create', icon: Plus },
     { name: 'Projects', href: '/projects', icon: FolderOpen },
-    { name: 'Social Feed', href: '/feed', icon: Users },
     { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
@@ -75,7 +74,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (location.pathname === '/') return 'Dashboard'
     if (location.pathname === '/create') return 'Create New Project'
     if (location.pathname === '/projects') return 'Projects'
-    if (location.pathname === '/feed') return 'Social Feed'
     if (location.pathname === '/profile') return 'Profile'
     if (location.pathname === '/settings') return 'Settings'
     if (location.pathname.startsWith('/project')) return 'Project Details'
@@ -235,6 +233,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           onClick={() => dispatch(toggleSidebar())}
         />
       )}
+
+      {/* Floating Social Button */}
+      <FloatingSocialButton />
     </div>
   )
 }
