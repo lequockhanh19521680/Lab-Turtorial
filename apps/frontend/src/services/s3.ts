@@ -206,8 +206,8 @@ export class MockS3Service {
 
 // Default S3 service instance
 export const s3Service = new MockS3Service({
-  bucketName: process.env.VITE_S3_BUCKET_NAME || 'lab-tutorial-dev',
-  region: process.env.VITE_AWS_REGION || 'us-east-1'
+  bucketName: import.meta.env.VITE_S3_BUCKET_NAME || 'lab-tutorial-dev',
+  region: import.meta.env.VITE_AWS_REGION || 'us-east-1'
 })
 
 /**
