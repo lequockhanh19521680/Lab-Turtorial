@@ -115,13 +115,6 @@ function App() {
             </Layout>
           </ProtectedRoute>
         } />
-        <Route path="/admin" element={
-          <ProtectedRoute>
-            <Layout>
-              <Admin />
-            </Layout>
-          </ProtectedRoute>
-        } />
       </Routes>
       <Toaster />
     </div>

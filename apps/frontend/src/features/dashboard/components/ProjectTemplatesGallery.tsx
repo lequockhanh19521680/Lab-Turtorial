@@ -516,29 +516,37 @@ const ProjectTemplatesGallery: React.FC<ProjectTemplatesGalleryProps> = ({
           <h2 className="text-xl font-semibold">All Templates</h2>
         )}
         
-        {filteredTemplates.length === 0 ? (
-          <div className="text-center py-16">
-            <Grid3x3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No templates found</h3>
-            <p className="text-muted-foreground mb-4">
-              Try adjusting your search criteria or browse all templates
-            </p>
-            <Button onClick={() => setFilters({ sortBy: 'popularity', sortOrder: 'desc' })}>
-              Clear filters
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredTemplates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onPreview={handlePreview}
-                onUseTemplate={handleUseTemplate}
-              />
-            ))}
-          </div>
-        )}
+        {(() => {
+          // When showing featured templates section, exclude featured templates from "All Templates"
+          const showingFeaturedSection = !filters.searchQuery && !filters.category && !filters.complexity
+          const templatesToShow = showingFeaturedSection 
+            ? filteredTemplates.filter(t => !t.isFeatured)
+            : filteredTemplates
+          
+          return templatesToShow.length === 0 ? (
+            <div className="text-center py-16">
+              <Grid3x3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">No templates found</h3>
+              <p className="text-muted-foreground mb-4">
+                Try adjusting your search criteria or browse all templates
+              </p>
+              <Button onClick={() => setFilters({ sortBy: 'popularity', sortOrder: 'desc' })}>
+                Clear filters
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {templatesToShow.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onPreview={handlePreview}
+                  onUseTemplate={handleUseTemplate}
+                />
+              ))}
+            </div>
+          )
+        })()}
       </div>
 
       {/* Template Preview Modal would go here */}
