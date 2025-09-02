@@ -5,11 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { authService } from '../services/auth'
 import { Mail, Lock, LogIn, AlertCircle, Zap } from 'lucide-react'
-
-// SERA UI Components
-import { PrimaryButton, SecondaryButton } from '@/components/ui/seraButton'
-import { SeraCard, SeraCardContent, SeraCardHeader, SeraCardTitle } from '@/components/ui/seraCard'
-import { SeraInput } from '@/components/ui/seraInput'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -84,66 +83,77 @@ const Login: React.FC = () => {
       {/* Right Column - Login Form */}
       <div className="lg:flex lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
         <div className="max-w-md mx-auto lg:mx-0 w-full">
-          <SeraCard variant="elevated" className="border-0 shadow-none lg:border lg:shadow-medium">
-            <SeraCardHeader className="space-y-1 text-center lg:text-left">
-              <SeraCardTitle className="text-2xl font-bold">Welcome back</SeraCardTitle>
-              <p className="text-secondary-600">
+          <Card className="border-0 shadow-none lg:border lg:shadow-sm">
+            <CardHeader className="space-y-1 text-center lg:text-left">
+              <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+              <CardDescription>
                 Sign in to your account to continue building amazing applications
-              </p>
-            </SeraCardHeader>
-            <SeraCardContent className="space-y-6">
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               {error && (
-                <div className="flex items-center space-x-2 p-3 bg-error-50 border border-error-200 rounded-lg">
-                  <AlertCircle className="h-4 w-4 text-error-500" />
-                  <span className="text-sm text-error-700">{error}</span>
+                <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <span className="text-sm text-red-700">{error}</span>
                 </div>
               )}
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <SeraInput
-                  id="email"
-                  label="Email address"
-                  type="email"
-                  placeholder="Enter your email"
-                  leftIcon={<Mail className="h-4 w-4" />}
-                  error={errors.email?.message}
-                  required
-                  {...register('email')}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      className="pl-10"
+                      {...register('email')}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-sm text-red-600">{errors.email.message}</p>
+                  )}
+                </div>
 
-                <SeraInput
-                  id="password"
-                  label="Password"
-                  type="password"
-                  placeholder="Enter your password"
-                  leftIcon={<Lock className="h-4 w-4" />}
-                  error={errors.password?.message}
-                  required
-                  {...register('password')}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Enter your password"
+                      className="pl-10"
+                      {...register('password')}
+                    />
+                  </div>
+                  {errors.password && (
+                    <p className="text-sm text-red-600">{errors.password.message}</p>
+                  )}
+                </div>
 
-                <PrimaryButton 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
-                  loading={isLoading}
-                  loadingText="Signing in..."
-                  leftIcon={!isLoading ? <LogIn className="h-4 w-4" /> : undefined}
-                >
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  ) : (
+                    <LogIn className="h-4 w-4 mr-2" />
+                  )}
                   Sign in
-                </PrimaryButton>
+                </Button>
               </form>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-secondary-300" />
+                  <div className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-secondary-500">Or continue with</span>
+                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
                 </div>
               </div>
 
-              <SecondaryButton
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => authService.signInWithGoogle()}
               >
@@ -154,16 +164,16 @@ const Login: React.FC = () => {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
                 Continue with Google
-              </SecondaryButton>
+              </Button>
 
-              <div className="text-center text-sm text-secondary-600">
+              <div className="text-center text-sm text-gray-600">
                 Don't have an account?{' '}
-                <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500 transition-colors">
+                <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
                   Create one now
                 </Link>
               </div>
-            </SeraCardContent>
-          </SeraCard>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
