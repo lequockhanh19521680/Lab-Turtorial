@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
-import NotificationCenter from './NotificationCenter'
+import NotificationCenter, { mockNotifications } from './ui/notification-center'
 import { useTheme } from '@/hooks/use-theme'
 import FloatingSocialButton from '../../../components/FloatingSocialButton'
 
@@ -154,7 +154,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             
             <div className="flex items-center space-x-4">
-              <NotificationCenter />
+              <NotificationCenter 
+                notifications={mockNotifications}
+                onNotificationRead={(id) => console.log('Read notification:', id)}
+                onNotificationDismiss={(id) => console.log('Dismissed notification:', id)}
+                onMarkAllRead={() => console.log('Mark all read')}
+                onNotificationAction={(notification) => console.log('Action clicked:', notification)}
+              />
               
               {/* Search functionality */}
               <div className="hidden md:flex relative">
