@@ -13,6 +13,7 @@ import Login from './pages/Login'
 import Register from './features/auth/components/Register'
 import AuthCallback from './pages/AuthCallback'
 import ComponentShowcase from './pages/ComponentShowcase'
+import Admin from './pages/Admin'
 import { Toaster } from './features/shared/components/ui/toaster'
 
 function App() {
@@ -79,6 +80,13 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <ProjectDetail />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <Layout>
+              <Admin />
             </Layout>
           </ProtectedRoute>
         } />

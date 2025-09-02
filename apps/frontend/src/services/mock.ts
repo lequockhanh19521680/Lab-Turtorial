@@ -456,7 +456,22 @@ export const mockAuth = {
           email: 'demo@agent-builder.app',
           name: 'Demo User',
           givenName: 'Demo',
-          familyName: 'User'
+          familyName: 'User',
+          role: 'user'
+        }
+      }
+    }
+    
+    if (email === 'admin@agent-builder.app' && password === 'admin123') {
+      return {
+        token: 'mock-jwt-token-admin-' + Date.now(),
+        user: {
+          id: 'admin-123',
+          email: 'admin@agent-builder.app',
+          name: 'Admin User',
+          givenName: 'Admin',
+          familyName: 'User',
+          role: 'admin'
         }
       }
     }
@@ -474,7 +489,8 @@ export const mockAuth = {
         email: userData.email,
         name: `${userData.givenName} ${userData.familyName}`,
         givenName: userData.givenName,
-        familyName: userData.familyName
+        familyName: userData.familyName,
+        role: 'user'
       }
     }
   },
@@ -492,7 +508,8 @@ export const mockAuth = {
       email: 'demo@agent-builder.app',
       name: 'Demo User',
       givenName: 'Demo',
-      familyName: 'User'
+      familyName: 'User',
+      role: 'user'
     }
   },
 

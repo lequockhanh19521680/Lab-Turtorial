@@ -41,6 +41,10 @@ export interface User {
   name: string
   givenName?: string
   familyName?: string
+  role?: 'user' | 'admin'
+  profilePicture?: string
+  createdAt?: string
+  lastLoginAt?: string
 }
 
 export interface AuthResponse {

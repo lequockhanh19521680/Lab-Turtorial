@@ -18,7 +18,8 @@ import {
   Monitor,
   ChevronDown,
   FolderOpen,
-  Users
+  Users,
+  Shield
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -66,6 +67,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
+  // Add admin navigation if user is admin
+  const isAdmin = currentUser?.role === 'admin'
+  const adminNavigation = isAdmin ? [
+    { name: 'Admin Dashboard', href: '/admin', icon: Shield }
+  ] : []
+
+  const allNavigation = [...navigation, ...adminNavigation]
+
   const isActivePath = (path: string) => {
     return location.pathname === path
   }
@@ -77,6 +86,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (location.pathname === '/feed') return 'Social Feed'
     if (location.pathname === '/profile') return 'Profile'
     if (location.pathname === '/settings') return 'Settings'
+    if (location.pathname === '/admin') return 'Admin Dashboard'
     if (location.pathname.startsWith('/project')) return 'Project Details'
     return 'Agent Builder'
   }
@@ -109,7 +119,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         
         <nav className="mt-6 px-6 flex-1">
           <ul className="space-y-2">
-            {navigation.map((item) => {
+            {allNavigation.map((item) => {
               const Icon = item.icon
               const isActive = isActivePath(item.href)
               
