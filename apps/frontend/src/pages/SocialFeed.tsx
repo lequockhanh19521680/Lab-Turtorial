@@ -123,6 +123,22 @@ const trendingTopics = [
 ]
 
 const SocialFeed: React.FC = () => {
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'following' | 'trending' | 'completed' | 'in-progress'>('all')
+  const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'views'>('recent')
+
+  const filteredFeedData = mockFeedData.filter(item => {
+    if (selectedFilter === 'all') return true
+    if (selectedFilter === 'completed') return item.project.status === 'COMPLETED'
+    if (selectedFilter === 'in-progress') return item.project.status === 'IN_PROGRESS'
+    // Add more filtering logic as needed
+    return true
+  })
+
+  const sortedFeedData = [...filteredFeedData].sort((a, b) => {
+    if (sortBy === 'popular') return b.project.likes - a.project.likes
+    if (sortBy === 'views') return b.project.views - a.project.views
+    return new Date(b.project.createdAt).getTime() - new Date(a.project.createdAt).getTime()
+  })
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set())
   const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set())
 
@@ -173,17 +189,80 @@ const SocialFeed: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Feed */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Header */}
-            <div className="space-y-2">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                Social Feed
-              </h1>
-              <p className="text-muted-foreground text-lg">Discover amazing projects from the community</p>
+            {/* Header with Filters */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                  Social Feed
+                </h1>
+                <p className="text-muted-foreground text-lg">Discover amazing projects from the community</p>
+              </div>
+              
+              {/* Filter and Sort Controls */}
+              <div className="flex flex-wrap gap-4 items-center justify-between bg-white/50 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant={selectedFilter === 'all' ? 'default' : 'outline'} 
+                    size="sm"
+                    onClick={() => setSelectedFilter('all')}
+                  >
+                    All Projects
+                  </Button>
+                  <Button 
+                    variant={selectedFilter === 'trending' ? 'default' : 'outline'} 
+                    size="sm"
+                    onClick={() => setSelectedFilter('trending')}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                    Trending
+                  </Button>
+                  <Button 
+                    variant={selectedFilter === 'completed' ? 'default' : 'outline'} 
+                    size="sm"
+                    onClick={() => setSelectedFilter('completed')}
+                  >
+                    Completed
+                  </Button>
+                  <Button 
+                    variant={selectedFilter === 'in-progress' ? 'default' : 'outline'} 
+                    size="sm"
+                    onClick={() => setSelectedFilter('in-progress')}
+                  >
+                    In Progress
+                  </Button>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Sort by:</span>
+                  <Button 
+                    variant={sortBy === 'recent' ? 'default' : 'ghost'} 
+                    size="sm"
+                    onClick={() => setSortBy('recent')}
+                  >
+                    Recent
+                  </Button>
+                  <Button 
+                    variant={sortBy === 'popular' ? 'default' : 'ghost'} 
+                    size="sm"
+                    onClick={() => setSortBy('popular')}
+                  >
+                    Popular
+                  </Button>
+                  <Button 
+                    variant={sortBy === 'views' ? 'default' : 'ghost'} 
+                    size="sm"
+                    onClick={() => setSortBy('views')}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Views
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Feed Items */}
             <div className="space-y-6">
-              {mockFeedData.map((item) => (
+              {sortedFeedData.map((item) => (
                 <Card key={item.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-200 bg-white/80 backdrop-blur-sm">
                   <CardHeader>
                     <div className="flex items-start justify-between">
