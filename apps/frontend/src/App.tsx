@@ -30,7 +30,21 @@ function App() {
         <Route path="/" element={
           <ProtectedRoute>
             <Layout>
+              <SocialFeed />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Layout>
               <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <Layout>
+              <Admin />
             </Layout>
           </ProtectedRoute>
         } />

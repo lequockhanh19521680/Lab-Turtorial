@@ -7,7 +7,6 @@ import { authService } from '../../../services/auth'
 import { 
   Menu, 
   X, 
-  Home, 
   Plus, 
   Settings, 
   User, 
@@ -20,7 +19,8 @@ import {
   FolderOpen,
   Search,
   Users,
-  MessageSquare
+  MessageSquare,
+  Home
 } from 'lucide-react'
 import { Button } from './ui/button'
 import {
@@ -34,6 +34,7 @@ import {
 import NotificationCenter, { mockNotifications } from './ui/notification-center'
 import { useTheme } from '@/hooks/use-theme'
 import FloatingSocialButton from '../../../components/FloatingSocialButton'
+import FloatingChatButton from '../../../components/FloatingChatButton'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -60,24 +61,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     loadCurrentUser()
   }, [])
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Create Project', href: '/create', icon: Plus },
-    { name: 'Projects', href: '/projects', icon: FolderOpen },
-    { name: 'Social Feed', href: '/feed', icon: Users },
-    { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Settings', href: '/settings', icon: Settings },
-  ]
+  const navigation = currentUser?.role === 'admin' 
+    ? [
+        { name: 'Admin Dashboard', href: '/admin', icon: Settings },
+        { name: 'User Management', href: '/admin/users', icon: Users },
+        { name: 'System Overview', href: '/admin/system', icon: FolderOpen },
+      ]
+    : [
+        { name: 'Social Feed', href: '/', icon: Users },
+        { name: 'Create Project', href: '/create', icon: Plus },
+        { name: 'Projects', href: '/projects', icon: FolderOpen },
+      ]
 
   const isActivePath = (path: string) => {
     return location.pathname === path
   }
 
   const getPageTitle = () => {
-    if (location.pathname === '/') return 'Dashboard'
+    if (location.pathname === '/') return currentUser?.role === 'admin' ? 'Admin Dashboard' : 'Social Feed'
+    if (location.pathname === '/admin') return 'Admin Dashboard'
+    if (location.pathname === '/admin/users') return 'User Management'
+    if (location.pathname === '/admin/system') return 'System Overview'
+    if (location.pathname === '/dashboard') return 'Dashboard'
     if (location.pathname === '/create') return 'Create New Project'
     if (location.pathname === '/projects') return 'Projects'
-    if (location.pathname === '/feed') return 'Social Feed'
     if (location.pathname === '/profile') return 'Profile'
     if (location.pathname === '/settings') return 'Settings'
     if (location.pathname === '/feedback') return 'Feedback'
@@ -216,6 +223,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   
+                  {/* User menu options */}
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    <Home className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
                   {/* Theme selector */}
                   <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wide">
                     Theme
@@ -262,6 +285,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Floating Social Button */}
       <FloatingSocialButton />
+
+      {/* Floating Chat Button */}
+      <FloatingChatButton />
     </div>
   )
 }
