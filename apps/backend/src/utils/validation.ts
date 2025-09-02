@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { APIGatewayProxyResult } from "aws-lambda";
 import { createErrorResponse } from "./lambda.js";
+import { ValidationError } from "./errors.js";
 
 /**
- * Validates request body using Zod schema
- * Returns validation result with parsed data or error response
+ * Enhanced validation function with comprehensive error handling
  */
 export function validateRequestBody<T>(
   body: string | null,
@@ -14,10 +14,7 @@ export function validateRequestBody<T>(
   | { success: false; response: APIGatewayProxyResult } {
   try {
     if (!body) {
-      return {
-        success: false,
-        response: createErrorResponse(400, "Request body is required"),
-      };
+      throw new ValidationError("Request body is required");
     }
 
     const parsedBody = JSON.parse(body);
@@ -28,16 +25,27 @@ export function validateRequestBody<T>(
       data: validatedData,
     };
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return {
+        success: false,
+        response: createErrorResponse(400, error.message, {
+          code: error.code,
+        }),
+      };
+    }
+
     if (error instanceof z.ZodError) {
       const validationErrors = error.issues.map((err: z.ZodIssue) => ({
         field: err.path.join("."),
         message: err.message,
+        code: err.code,
         received: "received" in err ? err.received : undefined,
       }));
 
       return {
         success: false,
-        response: createErrorResponse(400, "Validation failed", {
+        response: createErrorResponse(400, "Request validation failed", {
+          code: "VALIDATION_ERROR",
           errors: validationErrors,
           details: "Please check the request body format and required fields",
         }),
@@ -47,13 +55,17 @@ export function validateRequestBody<T>(
     if (error instanceof SyntaxError) {
       return {
         success: false,
-        response: createErrorResponse(400, "Invalid JSON format"),
+        response: createErrorResponse(400, "Invalid JSON format", {
+          code: "INVALID_JSON",
+        }),
       };
     }
 
     return {
       success: false,
-      response: createErrorResponse(400, "Request validation failed"),
+      response: createErrorResponse(400, "Request validation failed", {
+        code: "VALIDATION_ERROR",
+      }),
     };
   }
 }

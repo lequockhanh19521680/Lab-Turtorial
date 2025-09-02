@@ -3,13 +3,7 @@ import { Send, Bot, User, Code, Copy, Check, Sparkles, Mic, MicOff } from 'lucid
 import { Button } from '@/features/shared/components/ui/button'
 import { Card } from '@/features/shared/components/ui/card'
 import { Badge } from '@/features/shared/components/ui/badge'
-import Prism from 'prismjs'
-import 'prismjs/components/prism-javascript'
-import 'prismjs/components/prism-typescript'
-import 'prismjs/components/prism-jsx'
-import 'prismjs/components/prism-tsx'
-import 'prismjs/components/prism-css'
-import 'prismjs/components/prism-python'
+// TODO: Replace with a more secure syntax highlighting solution
 
 interface Message {
   id: string
@@ -58,8 +52,8 @@ const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   }, [messages])
 
   useEffect(() => {
-    // Highlight code blocks when messages change
-    Prism.highlightAll()
+    // TODO: Re-implement syntax highlighting with a secure library
+    // Prism.highlightAll()
   }, [messages])
 
   const handleSend = async () => {

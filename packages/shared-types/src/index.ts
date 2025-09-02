@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
 // Core Entity Schemas
-// User Management Types
+// User Management Types with RBAC
+export const UserRoleSchema = z.enum(['user', 'admin', 'moderator']);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+export const UserPermissionSchema = z.string().min(1);
+export type UserPermission = z.infer<typeof UserPermissionSchema>;
+
 export const UserSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
   email: z.string().email('Valid email is required'),
@@ -9,14 +15,69 @@ export const UserSchema = z.object({
   givenName: z.string().optional(),
   familyName: z.string().optional(),
   picture: z.string().url().optional(),
-  provider: z.enum(['google', 'cognito']),
+  role: UserRoleSchema.default('user'),
+  permissions: z.array(UserPermissionSchema).default([]),
+  provider: z.enum(['google', 'cognito', 'local']),
   providerUserId: z.string().min(1, 'Provider user ID is required'),
+  isActive: z.boolean().default(true),
+  lastLoginAt: z.string().datetime().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  lastLoginAt: z.string().datetime().optional(),
 });
 
 export interface User extends z.infer<typeof UserSchema> {}
+
+// Authentication Types
+export const LoginRequestSchema = z.object({
+  email: z.string().email('Valid email is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export const RegisterRequestSchema = z.object({
+  email: z.string().email('Valid email is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  givenName: z.string().min(1, 'Given name is required').max(50),
+  familyName: z.string().min(1, 'Family name is required').max(50),
+  name: z.string().optional(),
+});
+
+export const RefreshTokenRequestSchema = z.object({
+  refreshToken: z.string().min(1, 'Refresh token is required'),
+});
+
+export const PasswordResetRequestSchema = z.object({
+  email: z.string().email('Valid email is required'),
+});
+
+export const PasswordResetConfirmSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+// Authentication Response Types
+export interface AuthResponse {
+  success: boolean;
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+export interface RefreshTokenResponse {
+  success: boolean;
+  accessToken: string;
+  expiresIn: number;
+}
+
+// JWT Claims Interface
+export interface JWTClaims {
+  userId: string;
+  email: string;
+  role: UserRole;
+  permissions: string[];
+  iat?: number;
+  exp?: number;
+}
 
 // Project Management Types
 export const ProjectStatusSchema = z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED']);
@@ -67,13 +128,36 @@ export const ArtifactSchema = z.object({
 
 export interface Artifact extends z.infer<typeof ArtifactSchema> {}
 
-// Agent System Types
+// Agent System Types with Configuration-based Approach
+export const AgentTypeSchema = z.enum(['product-manager', 'backend', 'frontend', 'devops']);
+export type AgentType = z.infer<typeof AgentTypeSchema>;
+
+export const AgentConfigSchema = z.object({
+  type: AgentTypeSchema,
+  name: z.string().min(1),
+  description: z.string().optional(),
+  timeout: z.number().positive().default(300000), // 5 minutes
+  retryLimit: z.number().min(0).default(2),
+  dependencies: z.array(AgentTypeSchema).default([]),
+  capabilities: z.array(z.string()).default([]),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export interface AgentConfig extends z.infer<typeof AgentConfigSchema> {}
+
 export interface AgentExecutionContext {
   projectId: string;
   taskId: string;
   project: Project;
   previousArtifacts: Artifact[];
-  agentConfig?: Record<string, any>;
+  agentConfig: AgentConfig;
+  userContext: {
+    userId: string;
+    role: UserRole;
+    permissions: string[];
+  };
+  executionId: string;
+  attempt: number;
 }
 
 export interface AgentResponse {
@@ -81,6 +165,8 @@ export interface AgentResponse {
   artifacts: Artifact[];
   nextTasks?: Task[];
   errorMessage?: string;
+  executionTime: number;
+  tokensUsed?: number;
   metadata?: Record<string, any>;
 }
 
@@ -97,15 +183,23 @@ export const UpdateProjectRequestSchema = z.object({
 
 export const CreateTaskRequestSchema = z.object({
   projectId: z.string().min(1, 'Project ID is required'),
-  assignedAgent: z.enum(['ProductManagerAgent', 'BackendEngineerAgent', 'FrontendEngineerAgent', 'DevOpsEngineerAgent']),
+  assignedAgent: AgentTypeSchema,
+  title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
   description: z.string().max(500, 'Description too long').optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   dependencies: z.array(z.string()).default([]),
   status: TaskStatusSchema.default('TODO'),
+  estimatedHours: z.number().positive().optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export const UpdateTaskRequestSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200, 'Title too long').optional(),
   status: TaskStatusSchema.optional(),
+  assignedAgent: AgentTypeSchema.optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   progress: z.number().min(0).max(100).optional(),
+  actualHours: z.number().positive().optional(),
   errorMessage: z.string().max(1000, 'Error message too long').optional(),
   startedAt: z.string().datetime().optional(),
   completedAt: z.string().datetime().optional(),
