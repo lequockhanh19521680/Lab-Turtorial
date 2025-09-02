@@ -88,69 +88,83 @@ const RealTimeNotificationsPanel: React.FC<RealTimeNotificationsPanelProps> = ({
   const unreadCount = notifications.filter(n => !n.isRead).length
 
   return (
-    <Card className={`h-full ${className}`}>
-      <CardHeader className="pb-3">
+    <Card className={`border-0 shadow-xl bg-white ${className}`}>
+      <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Bell className="h-5 w-5" />
-            <CardTitle className="text-lg">Live Notifications</CardTitle>
-            {unreadCount > 0 && (
-              <Badge className="bg-red-500 text-white text-xs px-2 py-1">
-                {unreadCount}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-1">
-              <Button
-                variant={filter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('all')}
-                className="text-xs px-2 py-1"
-              >
-                All
-              </Button>
-              <Button
-                variant={filter === 'unread' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('unread')}
-                className="text-xs px-2 py-1"
-              >
-                Unread
-              </Button>
-              <Button
-                variant={filter === 'important' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('important')}
-                className="text-xs px-2 py-1"
-              >
-                Important
-              </Button>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-md">
+              <Bell className="h-4 w-4 text-white" />
             </div>
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onMarkAllRead}
-                className="text-xs px-2 py-1"
-              >
-                Mark all read
-              </Button>
-            )}
+            <div>
+              <CardTitle className="text-lg font-bold text-slate-800">Live Notifications</CardTitle>
+              {unreadCount > 0 && (
+                <p className="text-xs text-slate-600 font-medium">
+                  {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
           </div>
+          {unreadCount > 0 && (
+            <Badge className="bg-red-500 text-white text-xs px-2 py-1 font-bold">
+              {unreadCount}
+            </Badge>
+          )}
+        </div>
+        
+        {/* Compact filter buttons */}
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center space-x-1">
+            <Button
+              variant={filter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('all')}
+              className="text-xs px-3 py-1.5 h-7 font-medium"
+            >
+              All
+            </Button>
+            <Button
+              variant={filter === 'unread' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('unread')}
+              className="text-xs px-3 py-1.5 h-7 font-medium"
+            >
+              Unread
+            </Button>
+            <Button
+              variant={filter === 'important' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('important')}
+              className="text-xs px-3 py-1.5 h-7 font-medium"
+            >
+              Important
+            </Button>
+          </div>
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMarkAllRead}
+              className="text-xs px-2 py-1.5 h-7 text-slate-600 hover:text-slate-800"
+            >
+              Mark all read
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="h-96 overflow-y-auto">
+        <div className="max-h-[60vh] overflow-y-auto">
           <div className="p-4 space-y-3">
             {filteredNotifications.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">
+              <div className="text-center py-8 text-slate-500">
+                <div className="p-3 bg-slate-100 rounded-full w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+                  <Bell className="h-6 w-6 opacity-50" />
+                </div>
+                <p className="text-sm font-semibold mb-1">
                   {filter === 'unread' ? 'No unread notifications' : 
                    filter === 'important' ? 'No important notifications' : 
                    'No notifications yet'}
                 </p>
+                <p className="text-xs text-slate-400">Updates will appear here</p>
               </div>
             ) : (
               filteredNotifications.map((notification) => (
@@ -195,33 +209,37 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   return (
     <div
       className={`
-        group relative p-3 rounded-lg border transition-all duration-200 cursor-pointer
+        group relative p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-md
         ${notification.isRead 
-          ? 'bg-gray-50 border-gray-200 hover:bg-gray-100' 
-          : 'bg-white border-blue-200 shadow-sm hover:shadow-md'
+          ? 'bg-slate-50 border-slate-200 hover:bg-slate-100' 
+          : 'bg-white border-blue-200 shadow-sm hover:shadow-lg hover:border-blue-300'
         }
       `}
       onClick={handleClick}
     >
-      {/* Unread indicator */}
+      {/* Enhanced unread indicator */}
       {!notification.isRead && (
-        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full" />
+        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-r-full" />
       )}
 
       <div className="flex items-start space-x-3">
-        <div className="flex-shrink-0 mt-0.5">
-          {getIcon(notification.type)}
+        <div className="flex-shrink-0 mt-1">
+          <div className="p-1.5 bg-white rounded-md shadow-sm border border-slate-200">
+            {getIcon(notification.type)}
+          </div>
         </div>
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <p className={`text-sm font-medium truncate ${
-              notification.isRead ? 'text-gray-700' : 'text-gray-900'
+          <div className="flex items-start justify-between mb-2">
+            <p className={`text-sm font-bold leading-tight ${
+              notification.isRead ? 'text-slate-700' : 'text-slate-900'
             }`}>
               {notification.title}
             </p>
-            <div className="flex items-center space-x-2 ml-2">
-              {getBadge(notification.type)}
+            <div className="flex items-center space-x-1 ml-2">
+              <div className="scale-75">
+                {getBadge(notification.type)}
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -229,33 +247,33 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                   e.stopPropagation()
                   onDismiss(notification.id)
                 }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 p-0"
+                className="opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 p-0 hover:bg-slate-200"
               >
                 <X className="h-3 w-3" />
               </Button>
             </div>
           </div>
           
-          <p className={`text-sm ${
-            notification.isRead ? 'text-gray-500' : 'text-gray-700'
+          <p className={`text-xs leading-relaxed mb-3 ${
+            notification.isRead ? 'text-slate-500' : 'text-slate-700'
           }`}>
             {notification.message}
           </p>
           
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-gray-500">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400 font-medium">
               {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
             </p>
             
             {notification.actionRequired && (
-              <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">
+              <Badge variant="outline" className="text-xs text-orange-600 border-orange-200 px-2 py-0.5">
                 Action Required
               </Badge>
             )}
           </div>
           
           {notification.projectId && (
-            <div className="mt-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-slate-400 font-medium bg-slate-100 px-2 py-1 rounded">
               Project: {notification.projectId}
               {notification.agentType && ` • Agent: ${notification.agentType}`}
             </div>

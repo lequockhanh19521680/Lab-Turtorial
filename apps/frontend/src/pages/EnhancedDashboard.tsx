@@ -13,22 +13,25 @@ const EnhancedDashboard: React.FC = () => {
   } = useRealTimeNotifications()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="container mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Dashboard - Takes 2/3 of the space */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* Main Dashboard - Takes 3/4 of the space on large screens */}
+          <div className="xl:col-span-3">
             <RealTimeProjectDashboard projectId={projectId} />
           </div>
           
-          {/* Notifications Panel - Takes 1/3 of the space */}
-          <div className="lg:col-span-1">
-            <RealTimeNotificationsPanel 
-              notifications={notifications}
-              onNotificationRead={markAsRead}
-              onNotificationDismiss={dismissNotification}
-              onMarkAllRead={markAllAsRead}
-            />
+          {/* Notifications Panel - Takes 1/4 of the space, smaller and more focused */}
+          <div className="xl:col-span-1">
+            <div className="sticky top-6">
+              <RealTimeNotificationsPanel 
+                notifications={notifications}
+                onNotificationRead={markAsRead}
+                onNotificationDismiss={dismissNotification}
+                onMarkAllRead={markAllAsRead}
+                className="max-h-[80vh]"
+              />
+            </div>
           </div>
         </div>
       </div>
