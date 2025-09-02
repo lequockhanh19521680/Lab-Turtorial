@@ -58,3 +58,10 @@ cdk.out/
 
 # Build artifacts
 *.tsbuildinfo
+
+# Screenshots and large media files
+docs/screenshots/
+*.png
+*.jpg
+*.jpeg
+*.gif

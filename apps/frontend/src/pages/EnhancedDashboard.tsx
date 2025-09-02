@@ -13,7 +13,7 @@ const EnhancedDashboard: React.FC = () => {
   } = useRealTimeNotifications()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-6">
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Main Dashboard - Takes 3/4 of the space on large screens */}

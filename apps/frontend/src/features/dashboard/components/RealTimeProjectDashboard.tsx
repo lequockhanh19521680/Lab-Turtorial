@@ -63,33 +63,18 @@ const AgentProgressCard: React.FC<AgentProgressCardProps> = ({ agentStatus, clas
   const config = AGENT_CONFIG[agentStatus.agentType]
   const IconComponent = config.icon
   
-  const getStatusIcon = () => {
-    switch (agentStatus.status) {
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-emerald-600" />
-      case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />
-      case 'working':
-        return <Activity className="h-4 w-4 text-blue-600 animate-pulse" />
-      case 'waiting':
-        return <Clock className="h-4 w-4 text-amber-500" />
-      default:
-        return <AlertCircle className="h-4 w-4 text-slate-400" />
-    }
-  }
-
   const getStatusBadge = () => {
     switch (agentStatus.status) {
       case 'completed':
-        return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-medium">Completed</Badge>
+        return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-0 font-semibold">Completed</Badge>
       case 'failed':
-        return <Badge className="bg-red-50 text-red-700 border-red-200 font-medium">Failed</Badge>
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-0 font-semibold">Failed</Badge>
       case 'working':
-        return <Badge className="bg-blue-50 text-blue-700 border-blue-200 animate-pulse font-medium">Working</Badge>
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-0 font-semibold">Working</Badge>
       case 'waiting':
-        return <Badge className="bg-amber-50 text-amber-700 border-amber-200 font-medium">Waiting</Badge>
+        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-0 font-semibold">Waiting</Badge>
       default:
-        return <Badge className="bg-slate-50 text-slate-600 border-slate-200 font-medium">Idle</Badge>
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100 border-0 font-semibold">Idle</Badge>
     }
   }
 
@@ -112,85 +97,99 @@ const AgentProgressCard: React.FC<AgentProgressCardProps> = ({ agentStatus, clas
       case 'waiting':
         return 'bg-amber-500'
       default:
-        return 'bg-slate-400'
+        return 'bg-gray-400'
+    }
+  }
+
+  const getIconBackgroundColor = () => {
+    switch (agentStatus.agentType) {
+      case 'product-manager':
+        return 'bg-blue-500'
+      case 'backend':
+        return 'bg-emerald-500'
+      case 'frontend':
+        return 'bg-purple-500'
+      case 'devops':
+        return 'bg-orange-500'
+      default:
+        return 'bg-gray-500'
     }
   }
 
   return (
-    <Card className={`group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 shadow-lg bg-white ${className}`}>
-      {/* Enhanced gradient background */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${config.color} opacity-[0.02] group-hover:opacity-[0.04] transition-opacity duration-300`} />
-      
-      {/* Status indicator line */}
-      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.color}`} />
-      
-      <CardHeader className="relative pb-4">
-        <div className="flex items-start justify-between">
+    <Card className={`group relative bg-white border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-lg ${className}`}>
+      <CardContent className="p-6">
+        {/* Header Section */}
+        <div className="flex items-start justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <div className={`relative p-3 rounded-xl bg-gradient-to-br ${config.color} shadow-sm group-hover:shadow-md transition-shadow duration-300`}>
-              <IconComponent className="h-5 w-5 text-white" />
-              <div className="absolute inset-0 bg-white opacity-10 rounded-xl" />
+            <div className={`w-12 h-12 rounded-lg ${getIconBackgroundColor()} flex items-center justify-center shadow-sm`}>
+              <IconComponent className="h-6 w-6 text-white" />
             </div>
-            <div className="flex-1">
-              <CardTitle className="text-base font-bold text-slate-800 mb-1">
+            <div>
+              <h3 className="font-bold text-gray-900 text-lg mb-1">
                 {config.label}
-              </CardTitle>
-              <p className="text-xs text-slate-500 font-medium">{config.description}</p>
+              </h3>
+              <p className="text-sm text-gray-600">{config.description}</p>
             </div>
           </div>
-          <div className="flex flex-col items-end space-y-2">
-            {getStatusIcon()}
+          <div className="text-right">
             {getStatusBadge()}
           </div>
         </div>
-      </CardHeader>
-      
-      <CardContent className="relative space-y-5 pt-0">
-        {/* Enhanced progress section */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-700">Progress</span>
-            <span className="text-lg font-bold text-slate-800">{Math.round(agentStatus.progress)}%</span>
+
+        {/* Progress Section */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">Progress</span>
+            <span className="text-lg font-bold text-gray-900">{Math.round(agentStatus.progress)}%</span>
           </div>
-          <div className="relative">
-            <div className="w-full bg-slate-100 rounded-full h-3 shadow-inner">
-              <div 
-                className={`h-3 rounded-full transition-all duration-500 ease-out shadow-sm ${getProgressColor()}`}
-                style={{ width: `${agentStatus.progress}%` }}
-              />
-            </div>
-            {agentStatus.status === 'working' && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse rounded-full" />
-            )}
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className={`h-2 rounded-full transition-all duration-300 ${getProgressColor()}`}
+              style={{ width: `${agentStatus.progress}%` }}
+            />
           </div>
         </div>
 
-        {/* Current step with better typography */}
-        <div className="space-y-2">
-          <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">Current Step</p>
-          <p className="text-sm font-medium text-slate-800 leading-relaxed">{agentStatus.currentStep}</p>
+        {/* Current Step */}
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Current Step</p>
+          <p className="text-sm text-gray-800 font-medium leading-relaxed">{agentStatus.currentStep}</p>
         </div>
 
-        {/* Time estimation with icon */}
+        {/* Time Estimation */}
         {agentStatus.estimatedTimeRemaining && (
-          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <div className="flex items-center space-x-2">
-              <Timer className="h-4 w-4 text-slate-500" />
-              <span className="text-xs font-medium text-slate-600">Time Remaining</span>
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Timer className="h-4 w-4 text-gray-500" />
+                <span className="text-xs font-medium text-gray-600">Time Remaining</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-800">{formatTimeRemaining(agentStatus.estimatedTimeRemaining)}</span>
             </div>
-            <span className="text-sm font-bold text-slate-800">{formatTimeRemaining(agentStatus.estimatedTimeRemaining)}</span>
           </div>
         )}
 
-        {/* Enhanced error message */}
+        {/* Error Message */}
         {agentStatus.status === 'failed' && agentStatus.errorMessage && (
-          <div className="p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start space-x-2">
               <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-red-700 font-medium">{agentStatus.errorMessage}</p>
             </div>
           </div>
         )}
+
+        {/* Action Button */}
+        <div className="mt-6">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full border-gray-300 hover:border-gray-400 hover:bg-gray-50 font-medium"
+          >
+            View Details
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
@@ -208,39 +207,39 @@ const AgentCommunicationPanel: React.FC<AgentCommunicationPanelProps> = ({
   const getCommTypeIcon = (type: string) => {
     switch (type) {
       case 'handoff':
-        return <ArrowRight className="h-4 w-4 text-blue-500" />
+        return <ArrowRight className="h-4 w-4 text-blue-600" />
       case 'status_update':
-        return <Activity className="h-4 w-4 text-green-500" />
+        return <Activity className="h-4 w-4 text-emerald-600" />
       case 'request_input':
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />
+        return <AlertCircle className="h-4 w-4 text-amber-600" />
       default:
-        return <MessageSquare className="h-4 w-4 text-gray-500" />
+        return <MessageSquare className="h-4 w-4 text-gray-600" />
     }
   }
 
   const getCommTypeBadge = (type: string) => {
     switch (type) {
       case 'handoff':
-        return <Badge variant="outline" className="text-xs">Handoff</Badge>
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-0 font-semibold text-xs">Handoff</Badge>
       case 'status_update':
-        return <Badge variant="outline" className="text-xs">Update</Badge>
+        return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-0 font-semibold text-xs">Update</Badge>
       case 'request_input':
-        return <Badge variant="outline" className="text-xs">Request</Badge>
+        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-0 font-semibold text-xs">Request</Badge>
       default:
-        return <Badge variant="outline" className="text-xs">Message</Badge>
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100 border-0 font-semibold text-xs">Message</Badge>
     }
   }
 
   return (
-    <Card className={`border-0 shadow-xl bg-white ${className}`}>
-      <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-md">
-            <MessageSquare className="h-5 w-5 text-white" />
+    <Card className={`border border-gray-200 bg-white ${className}`}>
+      <CardHeader className="border-b border-gray-200 bg-gray-50">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+            <MessageSquare className="h-6 w-6 text-white" />
           </div>
           <div>
-            <CardTitle className="text-xl font-bold text-slate-800">Agent Communications</CardTitle>
-            <p className="text-sm text-slate-600 font-medium mt-1">
+            <CardTitle className="text-xl font-bold text-gray-900">Agent Communications</CardTitle>
+            <p className="text-sm text-gray-600 font-medium mt-1">
               Real-time agent interactions and handoffs
             </p>
           </div>
@@ -249,34 +248,34 @@ const AgentCommunicationPanel: React.FC<AgentCommunicationPanelProps> = ({
       <CardContent className="p-6">
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {communications.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              <div className="p-4 bg-slate-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <MessageSquare className="h-8 w-8 opacity-50" />
+            <div className="text-center py-12 text-gray-500">
+              <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <MessageSquare className="h-8 w-8 text-gray-400" />
               </div>
-              <p className="text-lg font-semibold mb-2">No agent communications yet</p>
-              <p className="text-sm">Agent interactions will appear here in real-time</p>
+              <p className="text-lg font-semibold mb-2 text-gray-800">No agent communications yet</p>
+              <p className="text-sm text-gray-600">Agent interactions will appear here in real-time</p>
             </div>
           ) : (
             communications.map((comm, index) => (
               <div 
                 key={index}
-                className="flex items-start space-x-4 p-4 bg-gradient-to-r from-slate-50 to-white rounded-xl border border-slate-100 hover:shadow-md transition-all duration-200"
+                className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200"
               >
                 <div className="flex-shrink-0 mt-1">
-                  <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-200">
+                  <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center">
                     {getCommTypeIcon(comm.communicationType)}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
-                      <p className="text-sm font-bold text-slate-800">
+                      <p className="text-sm font-bold text-gray-900">
                         {AGENT_CONFIG[comm.fromAgent]?.label || comm.fromAgent}
                       </p>
                       {comm.toAgent && (
                         <>
-                          <ArrowRight className="h-3 w-3 text-slate-400" />
-                          <p className="text-sm font-bold text-slate-800">
+                          <ArrowRight className="h-3 w-3 text-gray-400" />
+                          <p className="text-sm font-bold text-gray-900">
                             {AGENT_CONFIG[comm.toAgent]?.label || comm.toAgent}
                           </p>
                         </>
@@ -284,7 +283,7 @@ const AgentCommunicationPanel: React.FC<AgentCommunicationPanelProps> = ({
                     </div>
                     {getCommTypeBadge(comm.communicationType)}
                   </div>
-                  <p className="text-sm text-slate-700 leading-relaxed font-medium">{comm.message}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed font-medium">{comm.message}</p>
                 </div>
               </div>
             ))
@@ -424,68 +423,64 @@ const RealTimeProjectDashboard: React.FC<RealTimeProjectDashboardProps> = ({
 
   return (
     <div className={`space-y-8 ${className}`}>
-      {/* Enhanced Project Overview Header */}
-      <Card className="border-0 shadow-xl bg-white overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 p-8 text-white">
-          <div className="flex items-center justify-between">
+      {/* Project Overview Header */}
+      <Card className="border border-gray-200 bg-white">
+        <CardContent className="p-8">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <div className="flex items-center space-x-4 mb-3">
+                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
                   <Zap className="h-6 w-6 text-white" />
                 </div>
-                <CardTitle className="text-2xl font-bold">
-                  {dashboardData.project.projectName}
-                </CardTitle>
-              </div>
-              <p className="text-blue-100 text-lg font-medium leading-relaxed max-w-2xl">
-                {dashboardData.project.requestPrompt}
-              </p>
-            </div>
-            <div className="flex flex-col items-end space-y-3">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-red-400'} animate-pulse`} />
-                  <span className="text-sm font-semibold text-white">
-                    {isConnected ? 'Live' : 'Disconnected'}
-                  </span>
+                <div>
+                  <CardTitle className="text-2xl font-bold text-gray-900 mb-1">
+                    {dashboardData.project.projectName}
+                  </CardTitle>
+                  <p className="text-gray-600 text-lg leading-relaxed max-w-2xl">
+                    {dashboardData.project.requestPrompt}
+                  </p>
                 </div>
-                <Badge className="bg-white text-blue-700 hover:bg-white font-bold px-4 py-2 text-sm">
-                  In Progress
-                </Badge>
               </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                <span className="text-sm font-semibold text-gray-700">
+                  {isConnected ? 'Live' : 'Disconnected'}
+                </span>
+              </div>
+              <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-0 font-semibold px-4 py-2">
+                In Progress
+              </Badge>
             </div>
           </div>
-        </div>
-        <CardContent className="p-8 bg-gradient-to-b from-white to-slate-50">
+          
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Activity className="h-5 w-5 text-slate-600" />
-                <span className="text-lg font-bold text-slate-800">Overall Progress</span>
+                <Activity className="h-5 w-5 text-gray-600" />
+                <span className="text-lg font-bold text-gray-900">Overall Progress</span>
               </div>
               <div className="text-right">
-                <span className="text-3xl font-bold text-slate-800">
+                <span className="text-3xl font-bold text-gray-900">
                   {Math.round(dashboardData.overallProgress)}%
                 </span>
-                <p className="text-sm text-slate-500 font-medium">Complete</p>
+                <p className="text-sm text-gray-500 font-medium">Complete</p>
               </div>
             </div>
-            <div className="relative">
-              <div className="w-full bg-slate-200 rounded-full h-4 shadow-inner">
-                <div 
-                  className="h-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-700 ease-out shadow-sm"
-                  style={{ width: `${dashboardData.overallProgress}%` }}
-                />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse rounded-full" />
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="h-3 bg-blue-500 rounded-full transition-all duration-500"
+                style={{ width: `${dashboardData.overallProgress}%` }}
+              />
             </div>
             {dashboardData.estimatedCompletion && (
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm font-medium text-slate-600">Estimated completion:</span>
+                  <Clock className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-600">Estimated completion:</span>
                 </div>
-                <span className="text-sm font-bold text-slate-800">
+                <span className="text-sm font-semibold text-gray-800">
                   {new Date(dashboardData.estimatedCompletion).toLocaleString()}
                 </span>
               </div>
@@ -494,19 +489,19 @@ const RealTimeProjectDashboard: React.FC<RealTimeProjectDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Enhanced Agent Progress Cards Section */}
+      {/* Agent Progress Cards Section */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-md">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
               <Zap className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">AI Agent Workflow</h2>
-              <p className="text-slate-600 font-medium">Real-time progress tracking for each specialized agent</p>
+              <h2 className="text-2xl font-bold text-gray-900">AI Agent Workflow</h2>
+              <p className="text-gray-600 font-medium">Real-time progress tracking for each specialized agent</p>
             </div>
           </div>
-          <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 font-bold">
+          <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-0 px-4 py-2 font-semibold">
             4 Agents Active
           </Badge>
         </div>
@@ -525,28 +520,28 @@ const RealTimeProjectDashboard: React.FC<RealTimeProjectDashboardProps> = ({
         communications={dashboardData.recentCommunications}
       />
 
-      {/* Enhanced Quick Actions */}
-      <Card className="border-0 shadow-xl bg-white">
-        <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-          <CardTitle className="text-xl font-bold text-slate-800">Quick Actions</CardTitle>
-          <p className="text-sm text-slate-600 font-medium">Common tasks and monitoring tools</p>
+      {/* Quick Actions */}
+      <Card className="border border-gray-200 bg-white">
+        <CardHeader className="border-b border-gray-200 bg-gray-50">
+          <CardTitle className="text-xl font-bold text-gray-900">Quick Actions</CardTitle>
+          <p className="text-sm text-gray-600 font-medium">Common tasks and monitoring tools</p>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" size="lg" className="h-auto p-4 flex flex-col items-center space-y-2 hover:shadow-md transition-all duration-200 border-slate-200 hover:border-blue-300">
-              <MessageSquare className="h-6 w-6 text-blue-600" />
-              <span className="font-semibold">View Full Log</span>
-              <span className="text-xs text-slate-500">Complete activity history</span>
+            <Button variant="outline" size="lg" className="h-auto p-6 flex flex-col items-center space-y-3 hover:bg-gray-50 transition-colors duration-200 border-gray-300">
+              <MessageSquare className="h-8 w-8 text-blue-600" />
+              <span className="font-semibold text-gray-900">View Full Log</span>
+              <span className="text-xs text-gray-500">Complete activity history</span>
             </Button>
-            <Button variant="outline" size="lg" className="h-auto p-4 flex flex-col items-center space-y-2 hover:shadow-md transition-all duration-200 border-slate-200 hover:border-purple-300">
-              <Bot className="h-6 w-6 text-purple-600" />
-              <span className="font-semibold">Customize Agents</span>
-              <span className="text-xs text-slate-500">Configure AI behavior</span>
+            <Button variant="outline" size="lg" className="h-auto p-6 flex flex-col items-center space-y-3 hover:bg-gray-50 transition-colors duration-200 border-gray-300">
+              <Bot className="h-8 w-8 text-purple-600" />
+              <span className="font-semibold text-gray-900">Customize Agents</span>
+              <span className="text-xs text-gray-500">Configure AI behavior</span>
             </Button>
-            <Button variant="outline" size="lg" className="h-auto p-4 flex flex-col items-center space-y-2 hover:shadow-md transition-all duration-200 border-slate-200 hover:border-green-300">
-              <Activity className="h-6 w-6 text-green-600" />
-              <span className="font-semibold">Monitor Performance</span>
-              <span className="text-xs text-slate-500">Real-time metrics</span>
+            <Button variant="outline" size="lg" className="h-auto p-6 flex flex-col items-center space-y-3 hover:bg-gray-50 transition-colors duration-200 border-gray-300">
+              <Activity className="h-8 w-8 text-emerald-600" />
+              <span className="font-semibold text-gray-900">Monitor Performance</span>
+              <span className="text-xs text-gray-500">Real-time metrics</span>
             </Button>
           </div>
         </CardContent>
