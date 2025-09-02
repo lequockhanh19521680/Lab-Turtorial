@@ -24,9 +24,12 @@ import {
   Zap
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+
+// SERA UI Components
+import { SeraCard, SeraCardContent, SeraCardHeader, SeraCardTitle } from '@/components/ui/seraCard'
+import { PrimaryButton, SecondaryButton, GhostButton } from '@/components/ui/seraButton'
+import { StatusBadge } from '@/components/ui/seraBadge'
+import { SeraLoading, SeraErrorState } from '@/components/ui/seraLoading'
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -125,16 +128,15 @@ const ProjectDetail: React.FC = () => {
   }
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return <Badge variant="success">Completed</Badge>
-      case 'FAILED':
-        return <Badge variant="destructive">Failed</Badge>
-      case 'IN_PROGRESS':
-        return <Badge variant="info">In Progress</Badge>
-      default:
-        return <Badge variant="warning">Pending</Badge>
-    }
+    const statusMap = {
+      'COMPLETED': 'completed',
+      'FAILED': 'failed', 
+      'IN_PROGRESS': 'in-progress',
+      'PENDING': 'pending'
+    } as const
+    
+    const mappedStatus = statusMap[status as keyof typeof statusMap] || 'pending'
+    return <StatusBadge status={mappedStatus} showIcon={true} />
   }
 
   const handleApprove = async () => {
@@ -193,26 +195,27 @@ const ProjectDetail: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
+      <SeraLoading 
+        text="Loading project details..." 
+        size="lg" 
+        variant="center" 
+      />
     )
   }
 
   if (error || !project) {
     return (
-      <div className="text-center py-12">
-        <XCircle className="mx-auto h-12 w-12 text-red-500" />
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Project not found</h3>
-        <p className="mt-1 text-sm text-gray-500">
-          The project you're looking for doesn't exist or has been deleted.
-        </p>
-        <div className="mt-6">
-          <Button asChild>
+      <SeraErrorState
+        title="Project not found"
+        description="The project you're looking for doesn't exist or has been deleted."
+        onRetry={() => refetch()}
+        size="lg"
+        action={
+          <PrimaryButton asChild>
             <Link to="/">Back to Dashboard</Link>
-          </Button>
-        </div>
-      </div>
+          </PrimaryButton>
+        }
+      />
     )
   }
 
@@ -221,34 +224,34 @@ const ProjectDetail: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" asChild>
+          <GhostButton size="icon" asChild>
             <Link to="/">
               <ArrowLeft className="h-5 w-5" />
             </Link>
-          </Button>
+          </GhostButton>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{project.projectName}</h1>
-            <p className="text-gray-600 mt-1">{project.requestPrompt}</p>
+            <h1 className="text-3xl font-bold text-secondary-900">{project.projectName}</h1>
+            <p className="text-secondary-600 mt-1">{project.requestPrompt}</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             {isWebSocketConnected ? (
-              <div className="flex items-center text-green-600">
+              <div className="flex items-center text-success-600">
                 <Wifi className="h-4 w-4" />
                 <span className="text-sm">Live</span>
               </div>
             ) : (
-              <div className="flex items-center text-gray-400">
+              <div className="flex items-center text-secondary-400">
                 <WifiOff className="h-4 w-4" />
                 <span className="text-sm">Polling</span>
               </div>
             )}
           </div>
-          <Button variant="outline" onClick={() => refetch()}>
+          <SecondaryButton onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
-          </Button>
+          </SecondaryButton>
           <div className="flex items-center space-x-2">
             {getStatusIcon(project.status)}
             {getStatusBadge(project.status)}
@@ -260,97 +263,97 @@ const ProjectDetail: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column - Project Summary */}
         <div className="lg:col-span-3 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+          <SeraCard variant="elevated">
+            <SeraCardHeader>
+              <SeraCardTitle className="flex items-center space-x-2">
                 <Zap className="h-5 w-5 text-primary-600" />
                 <span>Project Overview</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </SeraCardTitle>
+            </SeraCardHeader>
+            <SeraCardContent className="space-y-4">
               <div className="flex items-center space-x-3">
-                <Calendar className="h-4 w-4 text-gray-400" />
+                <Calendar className="h-4 w-4 text-secondary-400" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Created</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm font-medium text-secondary-900">Created</p>
+                  <p className="text-sm text-secondary-500">
                     {format(new Date(project.createdAt), 'MMM d, yyyy')}
                   </p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-3">
-                <Clock className="h-4 w-4 text-gray-400" />
+                <Clock className="h-4 w-4 text-secondary-400" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Last Updated</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm font-medium text-secondary-900">Last Updated</p>
+                  <p className="text-sm text-secondary-500">
                     {format(new Date(project.updatedAt), 'MMM d, yyyy')}
                   </p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-3">
-                <Hash className="h-4 w-4 text-gray-400" />
+                <Hash className="h-4 w-4 text-secondary-400" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Project ID</p>
-                  <p className="text-sm text-gray-500 font-mono">
+                  <p className="text-sm font-medium text-secondary-900">Project ID</p>
+                  <p className="text-sm text-secondary-500 font-mono">
                     {project.projectId}
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </SeraCardContent>
+          </SeraCard>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <SeraCard variant="elevated">
+            <SeraCardHeader>
+              <SeraCardTitle>Quick Actions</SeraCardTitle>
+            </SeraCardHeader>
+            <SeraCardContent className="space-y-3">
               {project.status === 'COMPLETED' && (
-                <Button className="w-full" variant="default">
+                <PrimaryButton className="w-full">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   View Live App
-                </Button>
+                </PrimaryButton>
               )}
               
-              <Button className="w-full" variant="outline">
+              <SecondaryButton className="w-full">
                 <Download className="h-4 w-4 mr-2" />
                 Download Source
-              </Button>
+              </SecondaryButton>
               
               {project.status === 'FAILED' && (
-                <Button className="w-full" variant="default">
+                <PrimaryButton className="w-full">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry Build
-                </Button>
+                </PrimaryButton>
               )}
-            </CardContent>
-          </Card>
+            </SeraCardContent>
+          </SeraCard>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Progress Stats</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <SeraCard variant="elevated">
+            <SeraCardHeader>
+              <SeraCardTitle>Progress Stats</SeraCardTitle>
+            </SeraCardHeader>
+            <SeraCardContent>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tasks Completed</span>
+                  <span className="text-secondary-600">Tasks Completed</span>
                   <span className="font-medium">
                     {tasks?.filter(t => t.status === 'DONE').length || 0} / {tasks?.length || 0}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Artifacts Generated</span>
+                  <span className="text-secondary-600">Artifacts Generated</span>
                   <span className="font-medium">{artifacts?.length || 0}</span>
                 </div>
                 {status && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Overall Progress</span>
+                    <span className="text-secondary-600">Overall Progress</span>
                     <span className="font-medium">{Math.round(status.progress)}%</span>
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </SeraCardContent>
+          </SeraCard>
         </div>
 
         {/* Middle Column - Timeline */}
