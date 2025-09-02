@@ -61,18 +61,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     loadCurrentUser()
   }, [])
 
-  const navigation = [
-    { name: 'Social Feed', href: '/', icon: Users },
-    { name: 'Create Project', href: '/create', icon: Plus },
-    { name: 'Projects', href: '/projects', icon: FolderOpen },
-  ]
+  const navigation = currentUser?.role === 'admin' 
+    ? [
+        { name: 'Admin Dashboard', href: '/admin', icon: Settings },
+        { name: 'User Management', href: '/admin/users', icon: Users },
+        { name: 'System Overview', href: '/admin/system', icon: FolderOpen },
+      ]
+    : [
+        { name: 'Social Feed', href: '/', icon: Users },
+        { name: 'Create Project', href: '/create', icon: Plus },
+        { name: 'Projects', href: '/projects', icon: FolderOpen },
+      ]
 
   const isActivePath = (path: string) => {
     return location.pathname === path
   }
 
   const getPageTitle = () => {
-    if (location.pathname === '/') return 'Social Feed'
+    if (location.pathname === '/') return currentUser?.role === 'admin' ? 'Admin Dashboard' : 'Social Feed'
+    if (location.pathname === '/admin') return 'Admin Dashboard'
+    if (location.pathname === '/admin/users') return 'User Management'
+    if (location.pathname === '/admin/system') return 'System Overview'
     if (location.pathname === '/dashboard') return 'Dashboard'
     if (location.pathname === '/create') return 'Create New Project'
     if (location.pathname === '/projects') return 'Projects'

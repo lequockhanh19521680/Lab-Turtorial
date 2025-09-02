@@ -42,6 +42,7 @@ export interface AuthResponse {
     email: string
     firstName?: string
     lastName?: string
+    role?: 'user' | 'admin'
   }
 }
 
@@ -130,7 +131,8 @@ export const authService = {
           id: mockResponse.user.id,
           email: mockResponse.user.email,
           firstName: mockResponse.user.givenName,
-          lastName: mockResponse.user.familyName
+          lastName: mockResponse.user.familyName,
+          role: mockResponse.user.role
         }
       }
 

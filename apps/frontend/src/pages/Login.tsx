@@ -38,8 +38,14 @@ const Login: React.FC = () => {
     setError(null)
 
     try {
-      await authService.signIn(data)
-      navigate('/feed')
+      const authResponse = await authService.signIn(data)
+      
+      // Check user role and redirect accordingly
+      if (authResponse.user.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/feed')
+      }
     } catch (error: any) {
       setError(error.message)
     } finally {
