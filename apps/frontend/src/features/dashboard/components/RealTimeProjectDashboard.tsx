@@ -23,7 +23,6 @@ import {
 import type { 
   AgentWorkflowStatus, 
   ProjectDashboardData, 
-  AgentType,
   AgentCommunicationMessage
 } from '@lab-tutorial/shared-types'
 
@@ -266,16 +265,22 @@ const RealTimeProjectDashboard: React.FC<RealTimeProjectDashboardProps> = ({
 
   // Mock data for demonstration - in real app this would come from WebSocket
   useEffect(() => {
-    if (!currentProject && !projectId) return
-
-    // Initialize mock dashboard data
+    // Initialize mock dashboard data even without currentProject for demo
     const mockData: ProjectDashboardData = {
-      project: currentProject || {
-        projectId: projectId || 'demo',
-        userId: 'user1',
+      project: currentProject ? {
+        id: currentProject.projectId,
+        userId: currentProject.userId,
+        projectName: currentProject.projectName,
+        requestPrompt: currentProject.requestPrompt,
+        status: currentProject.status,
+        createdAt: currentProject.createdAt,
+        updatedAt: currentProject.updatedAt
+      } : {
+        id: projectId || 'demo-project',
+        userId: 'demo-user',
         projectName: 'AI Chat Application',
         requestPrompt: 'Build a real-time chat application with AI integration',
-        status: 'IN_PROGRESS',
+        status: 'IN_PROGRESS' as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
@@ -310,7 +315,7 @@ const RealTimeProjectDashboard: React.FC<RealTimeProjectDashboardProps> = ({
       ],
       recentCommunications: [
         {
-          projectId: projectId || currentProject?.projectId || 'demo',
+          projectId: projectId || 'demo-project',
           fromAgent: 'product-manager',
           toAgent: 'backend',
           message: 'Requirements analysis complete. Handoff includes user authentication, real-time messaging, and AI integration specs.',
@@ -318,7 +323,7 @@ const RealTimeProjectDashboard: React.FC<RealTimeProjectDashboardProps> = ({
           metadata: { artifactId: 'srs-001' }
         },
         {
-          projectId: projectId || currentProject?.projectId || 'demo',
+          projectId: projectId || 'demo-project',
           fromAgent: 'backend',
           message: 'Started implementing core messaging APIs. Database schema is ready.',
           communicationType: 'status_update',
