@@ -16,7 +16,9 @@ import {
   Moon,
   Sun,
   Monitor,
-  ChevronDown
+  ChevronDown,
+  FolderOpen,
+  Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -58,6 +60,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Create Project', href: '/create', icon: Plus },
+    { name: 'Projects', href: '/projects', icon: FolderOpen },
+    { name: 'Social Feed', href: '/feed', icon: Users },
+    { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
@@ -71,11 +76,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0`}>
+      } lg:translate-x-0 lg:static lg:inset-0 lg:flex lg:flex-col`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <Zap className="h-8 w-8 text-primary-600" />
@@ -91,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Button>
         </div>
         
-        <nav className="mt-6 px-6">
+        <nav className="mt-6 px-6 flex-1">
           <ul className="space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon
@@ -118,7 +123,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col ${sidebarOpen ? '' : 'lg:ml-64'}`}>
+      <div className="flex-1 flex flex-col lg:ml-0">
         {/* Top bar */}
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between h-16 px-6">
