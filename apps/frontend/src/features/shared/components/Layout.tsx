@@ -34,6 +34,7 @@ import {
 import NotificationCenter, { mockNotifications } from './ui/notification-center'
 import { useTheme } from '@/hooks/use-theme'
 import FloatingSocialButton from '../../../components/FloatingSocialButton'
+import FloatingChatButton from '../../../components/FloatingChatButton'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -275,6 +276,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Floating Social Button */}
       <FloatingSocialButton />
+
+      {/* Floating Chat Button */}
+      <FloatingChatButton />
     </div>
   )
 }
