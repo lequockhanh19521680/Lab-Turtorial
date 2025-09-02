@@ -28,8 +28,8 @@ interface TimelineStep {
 
 interface ProjectTimelineProps {
   projectStatus: string
-  onApprove?: (stepId: string) => void
-  onRequestChanges?: (stepId: string) => void
+  onApprove?: (_stepId: string) => void
+  onRequestChanges?: (_stepId: string) => void
   className?: string
 }
 
@@ -99,11 +99,11 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="success">Completed</Badge>
+        return <Badge variant="default">Completed</Badge>
       case 'in_progress':
-        return <Badge variant="info">In Progress</Badge>
+        return <Badge variant="secondary">In Progress</Badge>
       case 'pending_approval':
-        return <Badge variant="warning">Pending Approval</Badge>
+        return <Badge variant="outline">Pending Approval</Badge>
       case 'failed':
         return <Badge variant="destructive">Failed</Badge>
       default:

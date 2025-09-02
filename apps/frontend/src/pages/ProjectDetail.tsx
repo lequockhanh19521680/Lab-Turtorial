@@ -212,7 +212,7 @@ const ProjectDetail: React.FC = () => {
           </div>
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">Project not found</h3>
-            <p className="text-muted-foreground">The project you're looking for doesn't exist or has been deleted.</p>
+            <p className="text-muted-foreground">The project you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
           </div>
           <div className="flex gap-2 justify-center">
             <Button onClick={() => refetch()}>

@@ -121,7 +121,7 @@ const Register: React.FC = () => {
               Almost there!
             </h2>
             <p className="text-primary-100 text-lg">
-              We've sent a confirmation code to your email. Enter it below to complete your registration and start building.
+              We&apos;ve sent a confirmation code to your email. Enter it below to complete your registration and start building.
             </p>
           </div>
         </div>

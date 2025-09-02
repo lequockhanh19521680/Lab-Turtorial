@@ -136,7 +136,7 @@ const CreateProject: React.FC = () => {
     { value: "auto", label: "Auto-select", description: "Let AI choose the best stack" },
   ]
 
-  const useExamplePrompt = (prompt: string) => {
+  const fillExamplePrompt = (prompt: string) => {
     setValue('requestPrompt', prompt)
   }
 
@@ -218,7 +218,7 @@ const CreateProject: React.FC = () => {
                       <div
                         key={index}
                         className="border rounded-lg p-4 hover:border-primary hover:bg-accent transition-colors cursor-pointer"
-                        onClick={() => useExamplePrompt(example.prompt)}
+                        onClick={() => fillExamplePrompt(example.prompt)}
                       >
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">

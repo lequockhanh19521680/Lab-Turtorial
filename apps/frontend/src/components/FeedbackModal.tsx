@@ -52,7 +52,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
             <span>Request Changes</span>
           </DialogTitle>
           <DialogDescription>
-            Provide feedback to {agentName} about "{stepTitle}". Be specific about what needs to be changed or improved.
+            Provide feedback to {agentName} about &quot;{stepTitle}&quot;. Be specific about what needs to be changed or improved.
           </DialogDescription>
         </DialogHeader>
         
