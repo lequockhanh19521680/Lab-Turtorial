@@ -19,14 +19,6 @@ export interface SettingsState {
   // API Keys and integrations
   apiKeys: {
     openai: string
-    github: string
-    aws: {
-      accessKeyId: string
-      secretAccessKey: string
-      region: string
-    }
-    stripe: string
-    sendgrid: string
   }
   
   // Notification preferences
@@ -68,15 +60,7 @@ const initialState: SettingsState = {
     layoutDensity: 'comfortable'
   },
   apiKeys: {
-    openai: '',
-    github: '',
-    aws: {
-      accessKeyId: '',
-      secretAccessKey: '',
-      region: 'us-east-1'
-    },
-    stripe: '',
-    sendgrid: ''
+    openai: ''
   },
   notifications: {
     projectUpdates: true,
@@ -123,13 +107,9 @@ const settingsSlice = createSlice({
     },
     
     // API Keys actions
-    updateApiKey: (state, action: PayloadAction<{ key: keyof SettingsState['apiKeys']; value: any }>) => {
+    updateApiKey: (state, action: PayloadAction<{ key: keyof SettingsState['apiKeys']; value: string }>) => {
       const { key, value } = action.payload
-      if (key === 'aws') {
-        state.apiKeys.aws = { ...state.apiKeys.aws, ...value }
-      } else {
-        (state.apiKeys as any)[key] = value
-      }
+      state.apiKeys[key] = value
     },
     updateApiKeys: (state, action: PayloadAction<Partial<SettingsState['apiKeys']>>) => {
       state.apiKeys = { ...state.apiKeys, ...action.payload }

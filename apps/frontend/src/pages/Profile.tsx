@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { 
   Mail, 
@@ -16,7 +16,11 @@ import {
   Github,
   Twitter,
   Linkedin,
-  TrendingUp
+  TrendingUp,
+  Camera,
+  Upload,
+  Check,
+  X
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -105,6 +109,90 @@ const mockUserProjects = [
 
 const Profile: React.FC = () => {
   const [activeTab, setActiveTab] = useState('projects')
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [isUploadingCover, setIsUploadingCover] = useState(false)
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState(mockUserProfile.avatar)
+  const [coverPreview, setCoverPreview] = useState(mockUserProfile.coverImage)
+  
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingAvatar(true)
+
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setAvatarPreview(e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Simulate API upload to S3
+    try {
+      // In real implementation, this would upload to S3 and save metadata to DynamoDB
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Simulate processing: resize, optimize, generate thumbnails
+      console.log('Image uploaded successfully:', {
+        fileName: file.name,
+        size: file.size,
+        type: file.type,
+        s3Key: `profiles/avatar-${Date.now()}.jpg`,
+        metadata: {
+          originalSize: file.size,
+          processedSize: Math.floor(file.size * 0.7), // Simulated compression
+          dimensions: '400x400', // Standardized avatar size
+          userId: mockUserProfile.id
+        }
+      })
+      
+      setShowAvatarUpload(false)
+    } catch (error) {
+      console.error('Upload failed:', error)
+      setAvatarPreview(mockUserProfile.avatar) // Revert on error
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
+  const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingCover(true)
+
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setCoverPreview(e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Simulate API upload
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      console.log('Cover image uploaded successfully:', {
+        fileName: file.name,
+        s3Key: `profiles/cover-${Date.now()}.jpg`,
+        metadata: {
+          originalSize: file.size,
+          processedSize: Math.floor(file.size * 0.8),
+          dimensions: '1200x300',
+          userId: mockUserProfile.id
+        }
+      })
+    } catch (error) {
+      console.error('Cover upload failed:', error)
+      setCoverPreview(mockUserProfile.coverImage)
+    } finally {
+      setIsUploadingCover(false)
+    }
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -127,21 +215,69 @@ const Profile: React.FC = () => {
 
       <div className="relative z-10 max-w-6xl mx-auto p-6">
         {/* Profile Header */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm mb-6">
+        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm mb-6 overflow-hidden">
           {/* Cover Image */}
-          <div className="h-48 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-t-lg relative">
-            <div className="absolute inset-0 bg-black/20 rounded-t-lg"></div>
+          <div className="h-48 relative group">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-cover bg-center"
+              style={{ backgroundImage: coverPreview ? `url(${coverPreview})` : undefined }}
+            >
+              <div className="absolute inset-0 bg-black/20"></div>
+              
+              {/* Cover Upload Button */}
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="bg-white/90 backdrop-blur-sm hover:bg-white"
+                  onClick={() => coverInputRef.current?.click()}
+                  disabled={isUploadingCover}
+                >
+                  {isUploadingCover ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-600 border-t-transparent" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                  <span className="ml-2">
+                    {isUploadingCover ? 'Uploading...' : 'Change Cover'}
+                  </span>
+                </Button>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCoverUpload}
+                />
+              </div>
+            </div>
           </div>
           
           <CardContent className="relative -mt-16 pb-6">
             {/* Avatar and Basic Info */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end space-y-4 sm:space-y-0 sm:space-x-6 mb-6">
-              <Avatar className="h-32 w-32 border-4 border-white shadow-lg">
-                <AvatarImage src={mockUserProfile.avatar} />
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-3xl font-bold">
-                  {mockUserProfile.name.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
+              {/* Avatar with Upload */}
+              <div className="relative group">
+                <Avatar className="h-32 w-32 border-4 border-white shadow-lg">
+                  <AvatarImage src={avatarPreview} />
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-3xl font-bold">
+                    {mockUserProfile.name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                
+                {/* Avatar Upload Overlay */}
+                <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center cursor-pointer"
+                     onClick={() => setShowAvatarUpload(true)}>
+                  <Camera className="h-6 w-6 text-white" />
+                </div>
+                
+                {/* Upload Progress */}
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/70 rounded-full flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent" />
+                  </div>
+                )}
+              </div>
               
               <div className="flex-1 space-y-2">
                 <div className="flex items-center space-x-3">
@@ -401,6 +537,71 @@ const Profile: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Avatar Upload Modal */}
+        {showAvatarUpload && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <Card className="w-full max-w-md bg-white shadow-2xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">Upload Profile Picture</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setShowAvatarUpload(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                    <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-600 mb-2">
+                      Drag and drop your image here, or click to browse
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Supports: JPG, PNG, WebP (Max 5MB)
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-3"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                    >
+                      {isUploadingAvatar ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-600 border-t-transparent" />
+                          <span>Processing...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Select Image
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-xs text-blue-800">
+                    📸 <strong>Professional Processing:</strong> Your image will be automatically resized to 400x400px, 
+                    optimized for quality, and securely stored. Only metadata is saved to our database.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )

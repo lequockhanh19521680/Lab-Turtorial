@@ -18,7 +18,9 @@ import {
   Monitor,
   ChevronDown,
   FolderOpen,
-  Search
+  Search,
+  Users,
+  MessageSquare
 } from 'lucide-react'
 import { Button } from './ui/button'
 import {
@@ -62,6 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Create Project', href: '/create', icon: Plus },
     { name: 'Projects', href: '/projects', icon: FolderOpen },
+    { name: 'Social Feed', href: '/feed', icon: Users },
     { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
@@ -74,8 +77,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (location.pathname === '/') return 'Dashboard'
     if (location.pathname === '/create') return 'Create New Project'
     if (location.pathname === '/projects') return 'Projects'
+    if (location.pathname === '/feed') return 'Social Feed'
     if (location.pathname === '/profile') return 'Profile'
     if (location.pathname === '/settings') return 'Settings'
+    if (location.pathname === '/feedback') return 'Feedback'
     if (location.pathname.startsWith('/project')) return 'Project Details'
     return 'Agent Builder'
   }
@@ -130,6 +135,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             })}
           </ul>
         </nav>
+        
+        {/* Feedback link at bottom */}
+        <div className="px-6 py-4 border-t border-border">
+          <Link
+            to="/feedback"
+            className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isActivePath('/feedback')
+                ? 'bg-primary/10 text-primary border-r-2 border-primary'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            }`}
+          >
+            <MessageSquare className="h-5 w-5" />
+            <span>Feedback</span>
+          </Link>
+        </div>
       </div>
 
       {/* Main content */}

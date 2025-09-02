@@ -6,6 +6,7 @@ import Projects from './pages/Projects'
 import SocialFeed from './pages/SocialFeed'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
+import Feedback from './pages/Feedback'
 import ProjectDetail from './pages/ProjectDetail'
 import CreateProject from './pages/CreateProject'
 import Login from './pages/Login'
@@ -57,6 +58,13 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Settings />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/feedback" element={
+          <ProtectedRoute>
+            <Layout>
+              <Feedback />
             </Layout>
           </ProtectedRoute>
         } />
