@@ -5,7 +5,7 @@ import {
   InitiateAuthCommand,
   AuthFlowType
 } from '@aws-sdk/client-cognito-identity-provider'
-import { mockAuth } from './mock'
+import { mockAuth } from '../../../services/mock'
 
 // These should be environment variables in production
 const COGNITO_CONFIG = {
