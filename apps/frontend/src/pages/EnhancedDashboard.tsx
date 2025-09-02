@@ -1,14 +1,36 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import RealTimeProjectDashboard from '../features/dashboard/components/RealTimeProjectDashboard'
+import RealTimeNotificationsPanel, { useRealTimeNotifications } from '../features/dashboard/components/RealTimeNotificationsPanel'
 
-// Simple placeholder component - use Dashboard.tsx instead of EnhancedDashboard for now
 const EnhancedDashboard: React.FC = () => {
+  const { projectId } = useParams<{ projectId?: string }>()
+  const {
+    notifications,
+    markAsRead,
+    dismissNotification,
+    markAllAsRead
+  } = useRealTimeNotifications()
+
   return (
-    <div className="p-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4">Enhanced Dashboard</h1>
-        <p className="text-muted-foreground mb-4">This component is temporarily disabled during Shadcn UI migration.</p>
-        <Link to="/" className="text-primary hover:underline">Go to regular Dashboard</Link>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
+      <div className="container mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Dashboard - Takes 2/3 of the space */}
+          <div className="lg:col-span-2">
+            <RealTimeProjectDashboard projectId={projectId} />
+          </div>
+          
+          {/* Notifications Panel - Takes 1/3 of the space */}
+          <div className="lg:col-span-1">
+            <RealTimeNotificationsPanel 
+              notifications={notifications}
+              onNotificationRead={markAsRead}
+              onNotificationDismiss={dismissNotification}
+              onMarkAllRead={markAllAsRead}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
