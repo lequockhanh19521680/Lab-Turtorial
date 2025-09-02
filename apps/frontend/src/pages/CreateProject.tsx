@@ -23,8 +23,10 @@ import {
 // Shadcn UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Stepper } from '@/components/ui/stepper'
 import {
   Select,
   SelectContent,
@@ -32,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Stepper, StepperNavigation } from '@/components/ui/stepper'
 
 const createProjectSchema = z.object({
   projectName: z.string().min(1, 'Project name is required').max(50, 'Project name too long'),
@@ -83,14 +84,17 @@ const CreateProject: React.FC = () => {
 
   const steps = [
     {
+      id: "basics",
       title: "Project Basics",
       description: "Name & description"
     },
     {
-      title: "Configuration",
+      id: "config",
+      title: "Configuration", 
       description: "Tech stack & settings"
     },
     {
+      id: "review",
       title: "Review",
       description: "Confirm & create"
     }
@@ -132,7 +136,7 @@ const CreateProject: React.FC = () => {
     { value: "auto", label: "Auto-select", description: "Let AI choose the best stack" },
   ]
 
-  const useExample = (prompt: string) => {
+  const useExamplePrompt = (prompt: string) => {
     setValue('requestPrompt', prompt)
   }
 
@@ -175,7 +179,7 @@ const CreateProject: React.FC = () => {
         return (
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="projectName">Project Name</Label>
+              <Label htmlFor="projectName">Project Name *</Label>
               <Input
                 id="projectName"
                 placeholder="e.g., My Awesome Blog, Task Manager Pro"
@@ -184,11 +188,11 @@ const CreateProject: React.FC = () => {
               {errors.projectName && (
                 <p className="text-sm text-destructive">{errors.projectName.message}</p>
               )}
-              <p className="text-sm text-muted-foreground">Choose a memorable name for your project</p>
+              <p className="text-xs text-muted-foreground">Choose a memorable name for your project</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="requestPrompt">Project Description</Label>
+              <Label htmlFor="requestPrompt">Project Description *</Label>
               <Textarea
                 id="requestPrompt"
                 rows={6}
@@ -198,11 +202,11 @@ const CreateProject: React.FC = () => {
               {errors.requestPrompt && (
                 <p className="text-sm text-destructive">{errors.requestPrompt.message}</p>
               )}
-              <p className="text-sm text-muted-foreground">Describe your application in natural language. Be as specific as possible about features, design, and functionality.</p>
+              <p className="text-xs text-muted-foreground">Describe your application in natural language. Be as specific as possible about features, design, and functionality.</p>
             </div>
 
             {/* Example Prompts */}
-            <Card className="border">
+            <Card className="border-dashed">
               <CardHeader>
                 <CardTitle className="text-lg">Need inspiration? Try these examples:</CardTitle>
               </CardHeader>
@@ -213,18 +217,18 @@ const CreateProject: React.FC = () => {
                     return (
                       <div
                         key={index}
-                        className="border border-secondary-200 rounded-lg p-4 hover:border-primary-300 hover:bg-primary-50 transition-colors cursor-pointer"
-                        onClick={() => useExample(example.prompt)}
+                        className="border rounded-lg p-4 hover:border-primary hover:bg-accent transition-colors cursor-pointer"
+                        onClick={() => useExamplePrompt(example.prompt)}
                       >
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">
-                            <Icon className="h-5 w-5 text-primary-600" />
+                            <Icon className="h-5 w-5 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-medium text-secondary-900">
+                            <h3 className="text-sm font-medium">
                               {example.title}
                             </h3>
-                            <p className="text-xs text-secondary-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {example.description}
                             </p>
                           </div>
@@ -261,7 +265,7 @@ const CreateProject: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-sm text-muted-foreground">Select your preferred technology stack. AI will choose the best option if left empty.</p>
+              <p className="text-xs text-muted-foreground">Select your preferred technology stack. AI will choose the best option if left empty.</p>
             </div>
 
             <div className="space-y-2">
@@ -272,7 +276,7 @@ const CreateProject: React.FC = () => {
                 placeholder="List any API keys, third-party services, or integrations you want to include (e.g., Stripe for payments, SendGrid for emails, Google Maps)"
                 {...register('apiKeys')}
               />
-              <p className="text-sm text-muted-foreground">Optional: Specify any third-party services or APIs your project should integrate with.</p>
+              <p className="text-xs text-muted-foreground">Optional: Specify any third-party services or APIs your project should integrate with.</p>
             </div>
 
             <div className="space-y-2">
@@ -283,16 +287,16 @@ const CreateProject: React.FC = () => {
                 placeholder="Any specific requirements, constraints, or preferences for your project (e.g., mobile-responsive, dark mode, specific UI framework)"
                 {...register('additionalRequirements')}
               />
-              <p className="text-sm text-muted-foreground">Optional: Add any specific technical requirements or constraints.</p>
+              <p className="text-xs text-muted-foreground">Optional: Add any specific technical requirements or constraints.</p>
             </div>
 
-            <Card className="bg-primary-50 border-primary-200">
+            <Card className="bg-primary/5 border-primary/20">
               <CardContent className="pt-6">
                 <div className="flex items-start space-x-3">
-                  <Sparkles className="h-5 w-5 text-primary-600 mt-0.5" />
+                  <Sparkles className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <h3 className="text-sm font-medium text-primary-900">AI Configuration</h3>
-                    <p className="text-sm text-primary-700 mt-1">
+                    <h3 className="text-sm font-medium">AI Configuration</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
                       These settings help our AI agents make better decisions about your project architecture and implementation.
                     </p>
                   </div>
@@ -311,25 +315,25 @@ const CreateProject: React.FC = () => {
                   <Eye className="h-5 w-5" />
                   <span>Project Review</span>
                 </CardTitle>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Review your project details before creation
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-medium text-secondary-900 mb-2">Project Name</h4>
-                  <p className="text-sm text-secondary-600">{watchedValues.projectName}</p>
+                  <h4 className="text-sm font-medium mb-2">Project Name</h4>
+                  <p className="text-sm text-muted-foreground">{watchedValues.projectName}</p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-secondary-900 mb-2">Description</h4>
-                  <p className="text-sm text-secondary-600 whitespace-pre-wrap">{watchedValues.requestPrompt}</p>
+                  <h4 className="text-sm font-medium mb-2">Description</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{watchedValues.requestPrompt}</p>
                 </div>
 
                 {watchedValues.techStack && (
                   <div>
-                    <h4 className="text-sm font-medium text-secondary-900 mb-2">Technology Stack</h4>
-                    <p className="text-sm text-secondary-600">
+                    <h4 className="text-sm font-medium mb-2">Technology Stack</h4>
+                    <p className="text-sm text-muted-foreground">
                       {techStackOptions.find(option => option.value === watchedValues.techStack)?.label}
                     </p>
                   </div>
@@ -337,54 +341,54 @@ const CreateProject: React.FC = () => {
 
                 {watchedValues.apiKeys && (
                   <div>
-                    <h4 className="text-sm font-medium text-secondary-900 mb-2">API Keys & Integrations</h4>
-                    <p className="text-sm text-secondary-600 whitespace-pre-wrap">{watchedValues.apiKeys}</p>
+                    <h4 className="text-sm font-medium mb-2">API Keys & Integrations</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{watchedValues.apiKeys}</p>
                   </div>
                 )}
 
                 {watchedValues.additionalRequirements && (
                   <div>
-                    <h4 className="text-sm font-medium text-secondary-900 mb-2">Additional Requirements</h4>
-                    <p className="text-sm text-secondary-600 whitespace-pre-wrap">{watchedValues.additionalRequirements}</p>
+                    <h4 className="text-sm font-medium mb-2">Additional Requirements</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{watchedValues.additionalRequirements}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* AI Process Overview */}
-            <Card className="bg-gradient-to-r from-primary-50 to-primary-100 border-primary-200">
+            <Card className="bg-primary/5 border-primary/20">
               <CardHeader>
                 <CardTitle className="text-lg">What happens next?</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <div className="flex items-center justify-center h-10 w-10 bg-primary-100 rounded-full mx-auto mb-2">
-                      <Settings className="h-5 w-5 text-primary-600" />
+                    <div className="flex items-center justify-center h-10 w-10 bg-primary/10 rounded-full mx-auto mb-2">
+                      <Settings className="h-5 w-5 text-primary" />
                     </div>
-                    <h3 className="text-sm font-medium text-secondary-900">Analysis</h3>
-                    <p className="text-xs text-secondary-500 mt-1">AI analyzes your requirements</p>
+                    <h3 className="text-sm font-medium">Analysis</h3>
+                    <p className="text-xs text-muted-foreground mt-1">AI analyzes your requirements</p>
                   </div>
                   <div className="text-center">
-                    <div className="flex items-center justify-center h-10 w-10 bg-primary-100 rounded-full mx-auto mb-2">
-                      <Layers className="h-5 w-5 text-primary-600" />
+                    <div className="flex items-center justify-center h-10 w-10 bg-primary/10 rounded-full mx-auto mb-2">
+                      <Layers className="h-5 w-5 text-primary" />
                     </div>
-                    <h3 className="text-sm font-medium text-secondary-900">Planning</h3>
-                    <p className="text-xs text-secondary-500 mt-1">Creates detailed specifications</p>
+                    <h3 className="text-sm font-medium">Planning</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Creates detailed specifications</p>
                   </div>
                   <div className="text-center">
-                    <div className="flex items-center justify-center h-10 w-10 bg-primary-100 rounded-full mx-auto mb-2">
-                      <Server className="h-5 w-5 text-primary-600" />
+                    <div className="flex items-center justify-center h-10 w-10 bg-primary/10 rounded-full mx-auto mb-2">
+                      <Server className="h-5 w-5 text-primary" />
                     </div>
-                    <h3 className="text-sm font-medium text-secondary-900">Development</h3>
-                    <p className="text-xs text-secondary-500 mt-1">Generates frontend & backend code</p>
+                    <h3 className="text-sm font-medium">Development</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Generates frontend & backend code</p>
                   </div>
                   <div className="text-center">
-                    <div className="flex items-center justify-center h-10 w-10 bg-primary-100 rounded-full mx-auto mb-2">
-                      <Globe className="h-5 w-5 text-primary-600" />
+                    <div className="flex items-center justify-center h-10 w-10 bg-primary/10 rounded-full mx-auto mb-2">
+                      <Globe className="h-5 w-5 text-primary" />
                     </div>
-                    <h3 className="text-sm font-medium text-secondary-900">Deployment</h3>
-                    <p className="text-xs text-secondary-500 mt-1">Deploys your live application</p>
+                    <h3 className="text-sm font-medium">Deployment</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Deploys your live application</p>
                   </div>
                 </div>
               </CardContent>
@@ -402,12 +406,12 @@ const CreateProject: React.FC = () => {
       {/* Header */}
       <div className="text-center">
         <div className="flex justify-center mb-4">
-          <div className="flex items-center justify-center h-16 w-16 bg-primary-100 rounded-full">
-            <Zap className="h-8 w-8 text-primary-600" />
+          <div className="flex items-center justify-center h-16 w-16 bg-primary/10 rounded-full">
+            <Zap className="h-8 w-8 text-primary" />
           </div>
         </div>
-        <h1 className="text-3xl font-bold text-secondary-900">Create New Project</h1>
-        <p className="mt-2 text-lg text-secondary-600">
+        <h1 className="text-3xl font-bold">Create New Project</h1>
+        <p className="mt-2 text-lg text-muted-foreground">
           Describe your application idea and let our AI agents build it for you
         </p>
       </div>
@@ -425,16 +429,36 @@ const CreateProject: React.FC = () => {
           <form onSubmit={handleSubmit(onSubmit)}>
             {renderStepContent()}
             
-            <StepperNavigation
-              currentStep={currentStep}
-              totalSteps={steps.length}
-              onNext={currentStep === steps.length - 1 ? handleSubmit(onSubmit) : handleNext}
-              onPrevious={currentStep > 0 ? handlePrevious : undefined}
-              onCancel={() => navigate('/')}
-              nextLabel={currentStep === steps.length - 1 ? 'Create Project' : 'Next'}
-              isNextDisabled={!isStepValid()}
-              isLoading={createProjectMutation.isPending}
-            />
+            {/* Navigation */}
+            <div className="flex justify-between items-center pt-6 mt-6 border-t">
+              <div className="flex space-x-2">
+                {currentStep > 0 && (
+                  <Button type="button" variant="outline" onClick={handlePrevious}>
+                    Previous
+                  </Button>
+                )}
+                <Button type="button" variant="ghost" onClick={() => navigate('/')}>
+                  Cancel
+                </Button>
+              </div>
+              
+              <Button 
+                type={currentStep === steps.length - 1 ? "submit" : "button"}
+                onClick={currentStep === steps.length - 1 ? undefined : handleNext}
+                disabled={!isStepValid() || createProjectMutation.isPending}
+              >
+                {createProjectMutation.isPending ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Creating...
+                  </>
+                ) : currentStep === steps.length - 1 ? (
+                  'Create Project'
+                ) : (
+                  'Next'
+                )}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
